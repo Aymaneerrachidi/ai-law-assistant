@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { getLegalContext, SENTENCING_KB } from "./legal-kb.js";
 
 dotenv.config();
 
@@ -69,20 +70,38 @@ This information is educational and not a substitute for formal legal advice; fo
 };
 
 const DOMAIN_PROMPTS = {
-  family: `For family-law questions, explain the legal framework of the Moudawana through cohesive prose. Cover conditions, rights, and procedures in narrative form. Reference relevant articles naturally in sentences, including where suitable Articles 19 and 20 on marriage age, Articles 24 and 25 on guardianship, Article 29 on sadaq, Articles 166 and 171 on custody, and Articles 369 to 372 on obligatory bequest.`,
-  penal: `For penal-law questions, define the offense and legal elements in plain but formal prose, then explain penalties and how aggravating or mitigating circumstances affect outcomes. Mention article references naturally and keep the explanation neutral, factual, and legally responsible.`,
-  procedure: `For procedure questions, describe the legal path as a coherent sequence in narrative paragraphs: authority, phase, rights, timeline, and remedies. Avoid list formatting and present procedural flow with clear transitions.`,
-  contracts: `For obligations and contracts questions, explain validity, obligations, breach consequences, and enforcement in connected prose. Integrate practical risk points and legal references naturally, focusing on actionable understanding without list formatting.`,
-  general: `For broad questions, provide a concise general legal explanation first, then ask up to two clarifying questions in plain prose if needed. Maintain elegance, clarity, and legal precision.`,
+  family: `For family-law questions, use the LEGAL REFERENCE DATA provided above to cite exact article numbers from the Moudawana (Law 70-03, 2004). Explain conditions, rights, and procedures in cohesive narrative prose — cover marriage formation (Arts. 3, 12, 19, 20), mahr (Arts. 26-29), polygamy controls (Arts. 40-43), divorce types and financial rights (Arts. 77-94), custody priority order (Arts. 163-171), maintenance (Arts. 168-190), and Maliki school fallback (Art. 400). Embed article numbers naturally in sentences; do not display them as a list.`,
+  penal: `For penal-law questions, use the LEGAL REFERENCE DATA provided above to cite exact article numbers and penalty ranges. Identify the offense category (jnaiya / jnha / mukhalafa), cite the applicable article, state the imprisonment range and fine, and describe how aggravating or mitigating circumstances shift the outcome. Keep the explanation neutral, factual, and legal-responsibility-aware.`,
+  procedure: `For procedure questions, use the LEGAL REFERENCE DATA to describe the legal path as a coherent narrative: garde à vue limits (Art. 114-115), investigation phase, indictment, trial, appeal timeline (10 days), cassation (10 days from appeals decision), and statute of limitations (Art. 50). Present as flowing prose with clear transitions between phases.`,
+  contracts: `For obligations and contracts questions, use the LEGAL REFERENCE DATA to explain formation validity, performance, breach consequences, compensation (Art. 77 DOC), force majeure (Art. 264 DOC), and enforcement mechanisms. Integrate practical risk points and article references naturally without list formatting.`,
+  general: `For broad legal questions, provide a concise general explanation, reference any relevant articles from the LEGAL REFERENCE DATA if applicable, and maintain elegance, clarity, and legal precision.`,
 };
 
 function detectDomain(text) {
   const t = (text || "").toLowerCase();
 
-  const familyTerms = ["marriage", "divorce", "custody", "inherit", "inheritance", "moudawana", "nafaqa", "زوج", "زواج", "طلاق", "حضانة", "إرث", "مدونة الأسرة", "mariage", "divorce", "garde", "heritage", "moudawana"];
-  const penalTerms = ["theft", "crime", "penalty", "criminal", "assault", "fraud", "arrest", "سرقة", "جريمة", "عقوبة", "جنائي", "اعتداء", "fraude", "infraction", "peine", "penal"];
-  const procedureTerms = ["procedure", "appeal", "trial", "investigation", "evidence", "hearing", "مسطرة", "إجراء", "استئناف", "محاكمة", "تحقيق", "preuve", "appel", "proces", "procedure penale"];
-  const contractTerms = ["contract", "lease", "obligation", "agreement", "damages", "breach", "عقد", "التزام", "كراء", "تعويض", "إخلال", "contrat", "bail", "obligations", "dommages"];
+  const familyTerms = [
+    "marriage", "divorce", "custody", "inherit", "inheritance", "moudawana", "nafaqa", "mahr", "sadaq", "khul", "polygam",
+    "زوج", "زواج", "طلاق", "حضانة", "إرث", "ميراث", "مدونة الأسرة", "نفقة", "مهر", "خلع", "تعدد",
+    "mariage", "garde", "héritage", "succession", "pension alimentaire",
+  ];
+  const penalTerms = [
+    "theft", "vol", "robbery", "crime", "penalty", "criminal", "assault", "fraud", "arrest", "rape", "violence",
+    "murder", "homicide", "terrorism", "trafficking", "drug", "weapon", "bribery", "corruption", "sport", "riot", "stade",
+    "سرقة", "جريمة", "عقوبة", "جنائي", "اعتداء", "اغتصاب", "قتل", "إرهاب", "اتجار", "مخدر", "سلاح", "رشوة", "شغب",
+    "fraude", "infraction", "peine", "viol", "trafic", "terrorisme", "arme",
+  ];
+  const procedureTerms = [
+    "procedure", "appeal", "trial", "investigation", "evidence", "hearing", "detention", "garde à vue", "prescription",
+    "statute of limitations", "jurisdiction", "cassation",
+    "مسطرة", "إجراء", "استئناف", "محاكمة", "تحقيق", "توقيف", "تقادم", "اختصاص",
+    "appel", "procès", "preuve", "procédure pénale",
+  ];
+  const contractTerms = [
+    "contract", "lease", "obligation", "agreement", "damages", "breach", "liability", "force majeure", "rent", "sale",
+    "عقد", "التزام", "كراء", "تعويض", "إخلال", "بيع", "شراء",
+    "contrat", "bail", "obligations", "dommages", "responsabilité",
+  ];
 
   if (familyTerms.some((k) => t.includes(k))) return "family";
   if (penalTerms.some((k) => t.includes(k))) return "penal";
@@ -91,17 +110,25 @@ function detectDomain(text) {
   return "general";
 }
 
-function buildSystemPrompt(language, domain) {
+function buildSystemPrompt(language, domain, userText) {
   const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
   const primary = PRIMARY_SYSTEM_PROMPTS[lang];
   const domainPrompt = DOMAIN_PROMPTS[domain] || DOMAIN_PROMPTS.general;
+
+  // Inject relevant legal reference data from the knowledge base
+  const legalContext = getLegalContext(domain, userText);
+  const sentencingNeeded = /penalt|sentence|prison|fine|amendе|emprisonnement|عقوبة|سجن|غرامة/.test((userText || "").toLowerCase());
+  const legalCtxBlock = legalContext
+    ? `\n\nLEGAL REFERENCE DATA (use these exact article numbers and penalties in your answer):\n${legalContext}${sentencingNeeded ? "\n\n" + SENTENCING_KB : ""}`
+    : "";
+
   const langOverride =
     lang === "fr"
       ? "\n\nRappel impératif: répondez UNIQUEMENT en français, sans aucune exception."
       : lang === "ar"
       ? "\n\nتذكير حتمي: أجب باللغة العربية فقط، دون استثناء."
       : "";
-  return `${primary}\n\nDomain instructions:\n${domainPrompt}${langOverride}`;
+  return `${primary}${legalCtxBlock}\n\nDomain instructions:\n${domainPrompt}${langOverride}`;
 }
 
 app.use(cors());
@@ -135,7 +162,7 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
     const lang = req.body?.language || "ar";
     const lastUserMessage = [...inputMessages].reverse().find((m) => m?.role === "user")?.content || "";
     const domain = detectDomain(lastUserMessage);
-    const systemPrompt = buildSystemPrompt(lang, domain);
+    const systemPrompt = buildSystemPrompt(lang, domain, lastUserMessage);
 
     const messages = [
       { role: "system", content: systemPrompt },
