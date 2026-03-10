@@ -99,7 +99,7 @@ function buildSystemPrompt(language, domain) {
 }
 
 app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "50mb" }));
 
 app.get("/", (_req, res) => {
   return res.status(200).json({
@@ -168,6 +168,85 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
       error: "Internal server error",
       details: error instanceof Error ? error.message : String(error),
     });
+  }
+});
+
+/* ─── OCR Proxy (OCR.Space) ─── */
+app.post("/api/ocr", async (req, res) => {
+  try {
+    const ocrKey = process.env.OCR_SPACE_API_KEY;
+    if (!ocrKey) return res.status(500).json({ error: "Missing OCR_SPACE_API_KEY" });
+
+    const { base64Image, language } = req.body;
+    if (!base64Image) return res.status(400).json({ error: "base64Image is required" });
+
+    const ocrLang = language === "ar" ? "ara" : language === "fr" ? "fre" : "eng";
+
+    const formBody = new URLSearchParams();
+    formBody.append("apikey", ocrKey);
+    formBody.append("base64Image", base64Image);
+    formBody.append("language", ocrLang);
+    formBody.append("isOverlayRequired", "false");
+    formBody.append("OCREngine", "2");
+
+    const response = await fetch("https://api.ocr.space/parse/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formBody.toString(),
+    });
+
+    const data = await response.json();
+    if (data.IsErroredOnProcessing) {
+      return res.status(502).json({ error: "OCR failed", details: data.ErrorMessage });
+    }
+
+    const text = (data.ParsedResults || []).map((r) => r.ParsedText).join("\n").trim();
+    return res.json({ text });
+  } catch (error) {
+    return res.status(500).json({ error: "OCR error", details: error.message });
+  }
+});
+
+/* ─── Document Analysis (Cohere) ─── */
+app.post("/api/analyze-document", async (req, res) => {
+  try {
+    const cohereKey = process.env.COHERE_API_KEY;
+    if (!cohereKey) return res.status(500).json({ error: "Missing COHERE_API_KEY" });
+
+    const { text, language } = req.body;
+    if (!text) return res.status(400).json({ error: "text is required" });
+
+    const langLabel = language === "ar" ? "العربية" : language === "fr" ? "français" : "English";
+    const prompt =
+      language === "ar"
+        ? `أنت محلل قانوني مغربي متخصص. قم بتحليل الوثيقة التالية وقدّم:\n1. نوع الوثيقة القانوني\n2. ملخص للمحتوى الأساسي\n3. المواد القانونية المذكورة ومرجعها في القانون المغربي\n4. النقاط القانونية المهمة\n5. توصيات عملية\n\nاكتب بأسلوب قانوني أنيق بدون تنسيق ماركداون.\n\nالوثيقة:\n${text}`
+        : language === "fr"
+        ? `Vous êtes un analyste juridique marocain spécialisé. Analysez le document suivant et fournissez:\n1. Type juridique du document\n2. Résumé du contenu principal\n3. Articles de loi mentionnés et référence en droit marocain\n4. Points juridiques importants\n5. Recommandations pratiques\n\nRédigez en prose élégante sans formatage markdown.\n\nDocument:\n${text}`
+        : `You are a specialized Moroccan legal analyst. Analyze the following document and provide:\n1. Legal document type\n2. Summary of key content\n3. Legal articles mentioned and their reference in Moroccan law\n4. Important legal points\n5. Practical recommendations\n\nWrite in elegant prose without markdown formatting.\n\nDocument:\n${text}`;
+
+    const response = await fetch("https://api.cohere.com/v2/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cohereKey}`,
+      },
+      body: JSON.stringify({
+        model: "command-a-03-2025",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+      }),
+    });
+
+    const data = await response.json();
+    const content = data?.message?.content?.[0]?.text || null;
+
+    if (!response.ok || !content) {
+      return res.status(502).json({ error: "Cohere analysis failed", details: data });
+    }
+
+    return res.json({ analysis: content });
+  } catch (error) {
+    return res.status(500).json({ error: "Analysis error", details: error.message });
   }
 });
 
