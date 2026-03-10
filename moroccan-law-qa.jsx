@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 
 const API_URL = "http://localhost:8787/api/moroccan-law-qa";
 const ANALYZE_URL = "http://localhost:8787/api/analyze-document";
+const EXTRACT_URL = "http://localhost:8787/api/extract-with-llm";
 
 /* ─── Translations ─── */
 const UI = {
@@ -34,6 +35,26 @@ const UI = {
     copied: "تم النسخ ✓",
     exportPdf: "تصدير PDF",
     clearChat: "مسح المحادثة",
+    intelligenceTitle: "تحليل ذكي",
+    docTypeLabel: "نوع الوثيقة",
+    entitiesTitle: "الكيانات المستخرجة",
+    risksTitle: "المخاطر القانونية",
+    datesLabel: "التواريخ",
+    amountsLabel: "المبالغ",
+    articlesLabel: "المواد القانونية",
+    partiesLabel: "الأطراف",
+    noRisks: "لم يتم رصد مخاطر واضحة",
+    caseNumberLabel: "رقم الملف",
+    judgeLabel: "القاضي",
+    defendantLabel: "المتهم",
+    chargesLabel: "التهم",
+    verdictLabel: "منطوق الحكم",
+    docTypes: {
+      marriage: "عقد الزواج", divorce: "وثيقة الطلاق", custody: "وثيقة الحضانة",
+      will: "وصية", lease: "عقد الكراء", purchase: "عقد البيع",
+      complaint: "شكوى / مذكرة", inheritance: "وثيقة الإرث", general: "وثيقة قانونية عامة",
+      court_report: "محضر / حكم قضائي", criminal_case: "قضية جنائية / جنحة",
+    },
   },
   fr: {
     title: "Assistant Juridique",
@@ -64,6 +85,26 @@ const UI = {
     copied: "Copié ✓",
     exportPdf: "Exporter PDF",
     clearChat: "Effacer",
+    intelligenceTitle: "Analyse Intelligente",
+    docTypeLabel: "Type de document",
+    entitiesTitle: "Entités extraites",
+    risksTitle: "Risques juridiques",
+    datesLabel: "Dates",
+    amountsLabel: "Montants",
+    articlesLabel: "Articles de loi",
+    partiesLabel: "Parties",
+    noRisks: "Aucun risque apparent détecté",
+    caseNumberLabel: "N° de dossier",
+    judgeLabel: "Juge",
+    defendantLabel: "Prévenu",
+    chargesLabel: "Chefs d'inculpation",
+    verdictLabel: "Dispositif",
+    docTypes: {
+      marriage: "Contrat de mariage", divorce: "Acte de divorce", custody: "Acte de garde",
+      will: "Testament", lease: "Contrat de bail", purchase: "Contrat de vente",
+      complaint: "Plainte / Mémoire", inheritance: "Acte de succession", general: "Document juridique général",
+      court_report: "Procès-verbal / Jugement", criminal_case: "Affaire pénale / Correctionnelle",
+    },
   },
   en: {
     title: "Legal Assistant",
@@ -94,6 +135,26 @@ const UI = {
     copied: "Copied ✓",
     exportPdf: "Export PDF",
     clearChat: "Clear chat",
+    intelligenceTitle: "Smart Analysis",
+    docTypeLabel: "Document type",
+    entitiesTitle: "Extracted entities",
+    risksTitle: "Legal risks",
+    datesLabel: "Dates",
+    amountsLabel: "Amounts",
+    articlesLabel: "Legal articles",
+    partiesLabel: "Parties",
+    noRisks: "No apparent risks detected",
+    caseNumberLabel: "Case Number",
+    judgeLabel: "Judge",
+    defendantLabel: "Defendant",
+    chargesLabel: "Charges",
+    verdictLabel: "Verdict",
+    docTypes: {
+      marriage: "Marriage contract", divorce: "Divorce document", custody: "Custody document",
+      will: "Will / Testament", lease: "Lease agreement", purchase: "Sale contract",
+      complaint: "Complaint / Brief", inheritance: "Inheritance document", general: "General legal document",
+      court_report: "Court Report / Judgment", criminal_case: "Criminal / Misdemeanor Case",
+    },
   },
 };
 
@@ -201,6 +262,7 @@ export default function MoroccanLawQA() {
   const [fileName, setFileName] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [docIntelligence, setDocIntelligence] = useState(null);
   const endRef = useRef(null);
   const fileRef = useRef(null);
 
@@ -303,15 +365,261 @@ export default function MoroccanLawQA() {
     return ocrFromImage(file);
   }
 
-  async function analyzeText(text) {
+  async function analyzeText(text, docType) {
     const res = await fetch(ANALYZE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: text.slice(0, 8000), language }),
+      body: JSON.stringify({ text: text.slice(0, 8000), language, docType }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Analysis failed");
     return data.analysis;
+  }
+
+  async function extractWithLLM(text) {
+    const res = await fetch(EXTRACT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text.slice(0, 6000), language }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "LLM extraction failed");
+    return data;
+  }
+
+  /* ─── Doc intelligence helpers ─── */
+  function extractDocEntities(text, docType) {
+    const dateRx = /\b(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}|\d{1,2}\s+(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre|يناير|فبراير|مارس|أبريل|ماي|يونيو|يوليوز|غشت|شتنبر|أكتوبر|نونبر|دجنبر|January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})\b/gi;
+    const amountRx = /\b\d[\d\s,.]*(?:درهم|DH|MAD|€|EUR|\$|USD|ريال|دينار)\b|\b(?:مبلغ|montant|amount|sum)\s+(?:de\s+|of\s+)?\d[\d\s,.]*/gi;
+    const articleRx = /\b(?:article|المادة|الفصل|الفقرة|Art\.?)\s*\d+(?:\s*(?:bis|ter|quater|مكرر|مكررة))?\b/gi;
+    const unique = (arr) => [...new Set(arr.map((s) => s.trim()).filter(Boolean))];
+
+    const base = {
+      dates: unique(text.match(dateRx) || []).slice(0, 8),
+      amounts: unique(text.match(amountRx) || []).slice(0, 6),
+      articles: unique(text.match(articleRx) || []).slice(0, 10),
+    };
+
+    if (docType === "court_report" || docType === "criminal_case") {
+      // Extract court-specific entities
+      const caseNumRx = /(?:الدعوى\s*رقم|ملف\s*رقم|case\s*(?:number|no\.?)|dossier\s*n[o°]?\.?)\s*[:：]?\s*([\w\/\-]+)/gi;
+      const judgeRx = /(?:القاضي|السيد القاضي|judge|М\.?|juge)\s*[:：]?\s*([^\n،,]{3,40})/gi;
+      const defendantRx = /(?:المتهم|المتهمون|defendant|l'inculpé|le prévenu)\s*[:：]?\s*([^\n،,]{3,50})/gi;
+      const verdictRx = /(?:حكمت المحكمة|قضت\s*بـ?|الحكم\s*[:：]|صدر الحكم|verdict\s*[:：]|jugement\s*[:：])\s*([^\n]{5,120})/gi;
+      const chargesRx = /(?:تهمة|بتهمة|التهم|charges?\s*[:：]?|chef[s]?\s*d['']?inculpation)\s*[:：]?\s*([^\n،,]{5,80})/gi;
+
+      return {
+        ...base,
+        caseNumbers: unique([...text.matchAll(caseNumRx)].map((m) => m[1])).slice(0, 3),
+        judges: unique([...text.matchAll(judgeRx)].map((m) => m[1])).slice(0, 3),
+        defendants: unique([...text.matchAll(defendantRx)].map((m) => m[1])).slice(0, 4),
+        verdicts: unique([...text.matchAll(verdictRx)].map((m) => m[1])).slice(0, 3),
+        charges: unique([...text.matchAll(chargesRx)].map((m) => m[1])).slice(0, 5),
+      };
+    }
+
+    if (docType === "marriage") {
+      const partyRx = /\b(?:الزوج|الزوجة|المكري|المكتري|le demandeur|le défendeur|la partie|plaintiff|defendant|party|the buyer|the seller|البائع|المشتري)\b/gi;
+      return {
+        ...base,
+        parties: unique(text.match(partyRx) || []).slice(0, 6),
+      };
+    }
+
+    // Default: include generic party extraction
+    const partyRx = /\b(?:المدعي|المدعى عليه|الطرف الأول|الطرف الثاني|le demandeur|le défendeur|la partie|plaintiff|defendant|party|the buyer|the seller|البائع|المشتري|المكري|المكتري)\b/gi;
+    return {
+      ...base,
+      parties: unique(text.match(partyRx) || []).slice(0, 6),
+    };
+  }
+
+  function classifyDoc(text) {
+    const t2 = text.toLowerCase();
+
+    // Each type has positive indicators (score +1 each) and negative indicators (score -2 each).
+    // The type with the highest adjusted score above the minimum threshold wins.
+    const TYPES = {
+      court_report: {
+        positive: [
+          "محكمة", "court", "جلسة", "session", "قضاء", "judicial", "حكم", "judgment",
+          "القاضي", "judge", "المحكمة", "المتهم", "الدفاع", "النيابة العامة",
+          "محضر", "دعوى", "حكم صادر", "verdict", "صدر الحكم", "حكمت المحكمة",
+          "قضت بـ", "المدعى عليه", "السيد القاضي",
+        ],
+        negative: ["عريس", "عروس", "مهر", "صداق", "خطوبة", "dower", "dot"],
+        minScore: 3,
+      },
+      criminal_case: {
+        positive: [
+          "جنحة", "misdemeanor", "جناية", "felony", "جريمة", "crime", "متهم", "defendant",
+          "تهمة", "charge", "إدانة", "conviction", "حبس", "prison", "عقوبة", "penalty",
+          "شرطة", "police", "نيابة", "prosecution", "شغب", "rioting", "عنف", "violence",
+          "اعتداء", "assault", "إجرامي", "criminal",
+        ],
+        negative: ["عريس", "عروس", "مهر", "صداق", "dower", "dot", "عقد الزواج"],
+        minScore: 3,
+      },
+      marriage: {
+        positive: [
+          "عقد الزواج", "مهر", "ولي", "contrat de mariage", "dot", "mariage", "marriage contract",
+          "wedding", "صداق", "عريس", "عروس", "الزوج", "الزوجة", "خاتبة",
+        ],
+        negative: [
+          "محكمة", "court", "قضاء", "judicial", "حكم", "judgment",
+          "شغب", "rioting", "عنف", "violence", "جنحة", "misdemeanor",
+          "متهم", "defendant", "نيابة", "prosecution",
+        ],
+        minScore: 2,
+      },
+      divorce: {
+        positive: ["طلاق", "تطليق", "خلع", "divorce", "dissolution du mariage", "talaq"],
+        negative: [],
+        minScore: 1,
+      },
+      custody: {
+        positive: ["حضانة", "مسكن الحضانة", "garde", "custody", "كفالة"],
+        negative: [],
+        minScore: 1,
+      },
+      will: {
+        positive: ["وصية", "الموصى", "الموصى له", "testament", "légataire", "will", "testator"],
+        negative: [],
+        minScore: 1,
+      },
+      lease: {
+        positive: ["كراء", "مكري", "مكتري", "bail", "loyer", "locataire", "lease", "rental", "rent"],
+        negative: [],
+        minScore: 1,
+      },
+      purchase: {
+        positive: ["بيع", "مشتري", "بائع", "ثمن", "vente", "acheteur", "vendeur", "sale", "purchase", "buyer"],
+        negative: [],
+        minScore: 1,
+      },
+      complaint: {
+        positive: ["شكوى", "مذكرة", "plainte", "inculpé", "complaint", "accused"],
+        negative: [],
+        minScore: 1,
+      },
+      inheritance: {
+        positive: ["تركة", "وارث", "إرث", "succession", "héritier", "héritage", "inheritance", "heir"],
+        negative: [],
+        minScore: 1,
+      },
+    };
+
+    let best = "general";
+    let bestScore = 0;
+
+    for (const [type, { positive, negative, minScore }] of Object.entries(TYPES)) {
+      const pos = positive.filter((w) => t2.includes(w)).length;
+      const neg = negative.filter((w) => t2.includes(w)).length;
+      const score = pos - neg * 2;
+      if (score >= minScore && score > bestScore) {
+        bestScore = score;
+        best = type;
+      }
+    }
+
+    return best;
+  }
+
+  function detectRisks(text, docType, lang) {
+    const t2 = text.toLowerCase();
+    const risks = [];
+    const add = (level, msgAr, msgFr, msgEn) =>
+      risks.push({ level, msg: lang === "ar" ? msgAr : lang === "fr" ? msgFr : msgEn });
+
+    const isCourtDoc = docType === "court_report" || docType === "criminal_case";
+    const isMarriageDoc = docType === "marriage";
+
+    // ── Court / Criminal document checks ──────────────────────────────────
+    if (isCourtDoc) {
+      if (!/استئناف|recours|appel|appeal/i.test(t2))
+        add("medium",
+          "لا توجد إشارة إلى إجراءات الطعن أو الاستئناف",
+          "Aucune mention des voies de recours ou d'appel",
+          "No mention of appeal or recourse procedures");
+
+      if (!/تنفيذ|exécution|enforcement|execution/i.test(t2))
+        add("medium",
+          "لا توجد تفاصيل حول آليات تنفيذ الحكم",
+          "Aucun détail sur les modalités d'exécution du jugement",
+          "No details on judgment enforcement mechanisms");
+
+      const hasVerdict = /حكمت المحكمة|قضت|الحكم|verdict|jugement/i.test(t2);
+      if (!hasVerdict)
+        add("high",
+          "لم يُرصد منطوق الحكم بوضوح في الوثيقة",
+          "Le dispositif du jugement n'est pas clairement détecté",
+          "Verdict/judgment disposition not clearly detected");
+
+      if (!/متهم|defendant|inculpé|prévenu/i.test(t2))
+        add("high",
+          "لم تُحدَّد هوية المتهم أو المتهمين بوضوح",
+          "L'identité du/des prévenus n'est pas clairement établie",
+          "Defendant identity not clearly identified");
+
+      if (!/تاريخ|\bdate\b|\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/i.test(t2))
+        add("medium",
+          "لا يوجد تاريخ محدد في الوثيقة",
+          "Aucune date précise identifiée",
+          "No specific date found in the document");
+
+      return risks;
+    }
+
+    // ── Universal checks (non-court documents) ────────────────────────────
+    if (!/توقيع|signature|signed/i.test(t2))
+      add("high",
+        "لم يُرصد توقيع في الوثيقة",
+        "Aucune signature détectée dans le document",
+        "No signature detected in the document");
+
+    if (!/تاريخ|\bdate\b|\bدالة\b|\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/i.test(t2))
+      add("medium",
+        "لا يوجد تاريخ محدد",
+        "Aucune date précise identifiée",
+        "No specific date found");
+
+    if (!/شاهد|شهود|témoin|witness/i.test(t2) && ["marriage", "will", "purchase"].includes(docType))
+      add("medium",
+        "لم يُذكر شاهد في وثيقة تستوجبه",
+        "Aucun témoin mentionné pour un acte qui en requiert",
+        "No witness mentioned for a document that requires one");
+
+    // ── Marriage contract checks (ONLY if classified as marriage) ─────────
+    if (isMarriageDoc) {
+      if (!/مهر|صداق|dot|dower/i.test(t2))
+        add("high",
+          "لم يُذكر المهر في عقد الزواج",
+          "La dot n'est pas mentionnée dans le contrat de mariage",
+          "Marriage contract missing dower/mahr clause");
+    }
+
+    // ── Divorce-specific ──────────────────────────────────────────────────
+    if (docType === "divorce" && !/نفقة|pension alimentaire|alimony/i.test(t2))
+      add("medium",
+        "لا توجد إشارة لنفقة أو حضانة",
+        "Pas de mention de pension alimentaire ou de garde",
+        "No mention of alimony or custody terms");
+
+    // ── Lease-specific ────────────────────────────────────────────────────
+    if (docType === "lease" && !/مدة|durée|term|period/i.test(t2))
+      add("medium",
+        "لم تُحدَّد مدة الكراء",
+        "La durée du bail n'est pas précisée",
+        "Lease duration not specified");
+
+    // ── Will-specific ─────────────────────────────────────────────────────
+    if (docType === "will" && !/وارث|شاهد|notaire|état civil/i.test(t2))
+      add("high",
+        "الوصية قد تفتقر إلى شروط قانونية أساسية",
+        "Le testament pourrait manquer de conditions légales essentielles",
+        "Will may lack essential legal requirements");
+
+    return risks;
   }
 
   async function handleFile(file) {
@@ -343,8 +651,31 @@ export default function MoroccanLawQA() {
       setExtractedText(text);
       setDocState("analyzing");
 
-      const result = await analyzeText(text);
-      setAnalysis(result);
+      // Rule-based type for backend prose prompt context (fast, no API call)
+      const ruleDocType = classifyDoc(text);
+
+      // Prose analysis and LLM structured extraction run in parallel
+      const [proseResult, llmResult] = await Promise.allSettled([
+        analyzeText(text, ruleDocType),
+        extractWithLLM(text),
+      ]);
+
+      if (proseResult.status === "fulfilled") setAnalysis(proseResult.value);
+
+      // Prefer LLM extraction; fall back to rule-based if it fails or is unavailable
+      let docType, entities, llmConfidence = null;
+      if (llmResult.status === "fulfilled" && llmResult.value?.docType) {
+        docType = llmResult.value.docType;
+        entities = llmResult.value.entities;
+        llmConfidence = typeof llmResult.value.confidence === "number"
+          ? llmResult.value.confidence : null;
+      } else {
+        docType = ruleDocType;
+        entities = extractDocEntities(text, docType);
+      }
+
+      const risks = detectRisks(text, docType, language);
+      setDocIntelligence({ docType, entities, risks, llmConfidence });
       setDocState("done");
     } catch (err) {
       setDocState("idle");
@@ -357,6 +688,7 @@ export default function MoroccanLawQA() {
     setExtractedText("");
     setAnalysis("");
     setFileName("");
+    setDocIntelligence(null);
   }
 
   function copyToClipboard(text, id) {
@@ -734,6 +1066,110 @@ export default function MoroccanLawQA() {
                       whiteSpace: "pre-wrap", fontFamily: ff,
                       direction: rtl ? "rtl" : "ltr",
                     }}>{analysis}</div>
+                  </div>
+                )}
+
+                {/* Intelligence card */}
+                {docIntelligence && (
+                  <div style={{
+                    background: P.bgCard, border: `1px solid ${P.gold}25`, borderRadius: 12,
+                    overflow: "hidden", animation: `fadeUp 400ms ${E} forwards`,
+                  }}>
+                    {/* Header */}
+                    <div style={{ padding: "12px 16px", borderBottom: `1px solid ${P.gold}20`, display: "flex", alignItems: "center", gap: 8 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: P.gold }}>{t.intelligenceTitle}</span>
+                      <div style={{ marginInlineStart: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                        {docIntelligence.llmConfidence != null && (
+                          <span style={{ fontSize: 10, fontWeight: 700, background: "#7eb8e018", color: "#7eb8e0", border: "1px solid #7eb8e040", borderRadius: 20, padding: "2px 8px", letterSpacing: "0.02em" }}>
+                            LLM · {docIntelligence.llmConfidence}%
+                          </span>
+                        )}
+                        <span style={{ fontSize: 11, fontWeight: 600, background: `${P.gold}18`, color: P.gold, border: `1px solid ${P.gold}35`, borderRadius: 20, padding: "2px 10px" }}>
+                          {t.docTypes[docIntelligence.docType] || docIntelligence.docType}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 16, direction: rtl ? "rtl" : "ltr" }}>
+                      {/* Entities grid */}
+                      {(() => {
+                        const ent = docIntelligence.entities;
+                        const { dates = [], amounts = [], articles = [], parties = [],
+                                caseNumbers = [], judges = [], defendants = [],
+                                verdicts = [], charges = [] } = ent;
+                        const isCourtDoc = docIntelligence.docType === "court_report" || docIntelligence.docType === "criminal_case";
+                        const hasEntities = dates.length || amounts.length || articles.length ||
+                          parties.length || caseNumbers.length || judges.length ||
+                          defendants.length || verdicts.length || charges.length;
+                        if (!hasEntities) return null;
+                        const chip = (items, label, color) => items && items.length ? (
+                          <div key={label} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                              {items.map((v, i) => (
+                                <span key={i} style={{ fontSize: 12, padding: "2px 9px", background: `${color}14`, color, border: `1px solid ${color}30`, borderRadius: 20 }}>{v}</span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null;
+                        return (
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: P.textMid, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                              {t.entitiesTitle}
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                              {chip(dates, t.datesLabel, "#7eb8e0")}
+                              {isCourtDoc ? (
+                                <>
+                                  {chip(caseNumbers, t.caseNumberLabel, "#e0a87e")}
+                                  {chip(judges,      t.judgeLabel,      "#a87ee0")}
+                                  {chip(defendants,  t.defendantLabel,  "#e07e7e")}
+                                  {chip(charges,     t.chargesLabel,    "#e0d07e")}
+                                  {chip(verdicts,    t.verdictLabel,    "#7ee0c8")}
+                                </>
+                              ) : (
+                                <>
+                                  {chip(amounts, t.amountsLabel, "#7ed8a0")}
+                                  {chip(articles, t.articlesLabel, P.gold)}
+                                  {chip(parties, t.partiesLabel, "#c87eb8")}
+                                </>
+                              )}
+                              {isCourtDoc && chip(articles, t.articlesLabel, P.gold)}
+                              {isCourtDoc && chip(amounts, t.amountsLabel, "#7ed8a0")}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Risks */}
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: P.textMid, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                          {t.risksTitle}
+                        </div>
+                        {docIntelligence.risks.length === 0 ? (
+                          <div style={{ fontSize: 13, color: "#7ed8a0", display: "flex", alignItems: "center", gap: 6 }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            {t.noRisks}
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                            {docIntelligence.risks.map((r, i) => {
+                              const high = r.level === "high";
+                              const col = high ? "#e07e7e" : "#e0c97a";
+                              return (
+                                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: P.textMid, background: `${col}0c`, border: `1px solid ${col}25`, borderRadius: 8, padding: "8px 12px" }}>
+                                  <svg style={{ flexShrink: 0, marginTop: 2 }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                  <span>{r.msg}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 

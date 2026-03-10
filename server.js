@@ -95,7 +95,13 @@ function buildSystemPrompt(language, domain) {
   const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
   const primary = PRIMARY_SYSTEM_PROMPTS[lang];
   const domainPrompt = DOMAIN_PROMPTS[domain] || DOMAIN_PROMPTS.general;
-  return `${primary}\n\nDomain instructions:\n${domainPrompt}`;
+  const langOverride =
+    lang === "fr"
+      ? "\n\nRappel impératif: répondez UNIQUEMENT en français, sans aucune exception."
+      : lang === "ar"
+      ? "\n\nتذكير حتمي: أجب باللغة العربية فقط، دون استثناء."
+      : "";
+  return `${primary}\n\nDomain instructions:\n${domainPrompt}${langOverride}`;
 }
 
 app.use(cors());
@@ -213,16 +219,49 @@ app.post("/api/analyze-document", async (req, res) => {
     const cohereKey = process.env.COHERE_API_KEY;
     if (!cohereKey) return res.status(500).json({ error: "Missing COHERE_API_KEY" });
 
-    const { text, language } = req.body;
+    const { text, language, docType } = req.body;
     if (!text) return res.status(400).json({ error: "text is required" });
 
-    const langLabel = language === "ar" ? "العربية" : language === "fr" ? "français" : "English";
+    // Build type-specific instructions so the AI focuses on what matters for this document
+    const typeInstructions = {
+      ar: {
+        court_report:   "الوثيقة محضر أو حكم قضائي. ركّز على: اسم المحكمة، رقم الملف، هوية القاضي، أسماء الأطراف، التهم الموجهة، منطوق الحكم، العقوبة المقررة، وآجال الطعن.",
+        criminal_case:  "الوثيقة قضية جنائية أو جنحة. ركّز على: التهم الجنائية، هوية المتهم، أدلة الإدانة أو البراءة، العقوبة المحكوم بها أو المطلوبة، والنصوص القانونية المستند إليها.",
+        marriage:       "الوثيقة عقد زواج. ركّز على: أطراف العقد، المهر والصداق، شروط الزواج، شهود العقد، والمسائل القانونية ذات الصلة.",
+        divorce:        "الوثيقة وثيقة طلاق أو تطليق. ركّز على: أسباب الطلاق، حقوق النفقة والحضانة، تقسيم الممتلكات، وأحكام مدونة الأسرة المنطبقة.",
+        lease:          "الوثيقة عقد كراء. ركّز على: مدة العقد، قيمة الإيجار، التزامات الطرفين، شروط الإنهاء، وأحكام قانون الكراء المغربي.",
+        will:           "الوثيقة وصية. ركّز على: الموصي والموصى لهم، حدود الثلث القانوني، شهود الوصية، وصحتها من الناحية القانونية.",
+        general:        "وثيقة قانونية عامة. قدّم تحليلاً شاملاً يشمل: نوع الوثيقة، الأطراف المعنية، الالتزامات، المخاطر القانونية، والمواد المنطبقة.",
+      },
+      fr: {
+        court_report:   "Le document est un procès-verbal ou un jugement. Concentrez-vous sur: le nom du tribunal, le numéro de dossier, l'identité du juge, les parties, les chefs d'inculpation, le dispositif du jugement, la peine et les délais de recours.",
+        criminal_case:  "Le document est une affaire pénale ou correctionnelle. Concentrez-vous sur: les charges pénales, l'identité du prévenu, les éléments de preuve, la peine prononcée ou requise, et les articles de loi invoqués.",
+        marriage:       "Le document est un contrat de mariage. Concentrez-vous sur: les parties, la dot, les conditions du mariage, les témoins et les aspects juridiques.",
+        divorce:        "Le document est un acte de divorce. Concentrez-vous sur: les motifs, la pension alimentaire, la garde et le partage des biens.",
+        lease:          "Le document est un contrat de bail. Concentrez-vous sur: la durée, le loyer, les obligations des parties et les conditions de résiliation.",
+        will:           "Le document est un testament. Concentrez-vous sur: le testateur, les légataires, la limite du tiers légal et la validité juridique.",
+        general:        "Document juridique général. Fournissez une analyse complète: type, parties, obligations, risques et articles applicables.",
+      },
+      en: {
+        court_report:   "The document is a court report or judgment. Focus on: court name, case number, judge identity, parties, charges, verdict/ruling, sentence, and appeal deadlines.",
+        criminal_case:  "The document is a criminal or misdemeanor case. Focus on: criminal charges, defendant identity, evidence, sentence rendered or requested, and cited legal articles.",
+        marriage:       "The document is a marriage contract. Focus on: parties, dower/mahr, marriage conditions, witnesses, and relevant legal points.",
+        divorce:        "The document is a divorce deed. Focus on: grounds, alimony, child custody, property division, and applicable Family Code provisions.",
+        lease:          "The document is a lease agreement. Focus on: duration, rent, obligations of both parties, and termination conditions.",
+        will:           "The document is a will/testament. Focus on: testator, beneficiaries, one-third limit, witnesses, and legal validity.",
+        general:        "General legal document. Provide a full analysis: document type, parties, obligations, legal risks, and applicable articles.",
+      },
+    };
+
+    const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
+    const typeHint = (typeInstructions[lang][docType] || typeInstructions[lang].general);
+
     const prompt =
-      language === "ar"
-        ? `أنت محلل قانوني مغربي متخصص. قم بتحليل الوثيقة التالية وقدّم:\n1. نوع الوثيقة القانوني\n2. ملخص للمحتوى الأساسي\n3. المواد القانونية المذكورة ومرجعها في القانون المغربي\n4. النقاط القانونية المهمة\n5. توصيات عملية\n\nاكتب بأسلوب قانوني أنيق بدون تنسيق ماركداون.\n\nالوثيقة:\n${text}`
-        : language === "fr"
-        ? `Vous êtes un analyste juridique marocain spécialisé. Analysez le document suivant et fournissez:\n1. Type juridique du document\n2. Résumé du contenu principal\n3. Articles de loi mentionnés et référence en droit marocain\n4. Points juridiques importants\n5. Recommandations pratiques\n\nRédigez en prose élégante sans formatage markdown.\n\nDocument:\n${text}`
-        : `You are a specialized Moroccan legal analyst. Analyze the following document and provide:\n1. Legal document type\n2. Summary of key content\n3. Legal articles mentioned and their reference in Moroccan law\n4. Important legal points\n5. Practical recommendations\n\nWrite in elegant prose without markdown formatting.\n\nDocument:\n${text}`;
+      lang === "ar"
+        ? `أنت محلل قانوني مغربي متخصص.\n\nتعليمات خاصة بنوع الوثيقة: ${typeHint}\n\nبعد التحليل قدّم بالترتيب:\n1. نوع الوثيقة القانوني المحدد\n2. ملخص المحتوى الأساسي\n3. المواد القانونية المذكورة ومرجعها في القانون المغربي\n4. النقاط القانونية المهمة\n5. توصيات عملية\n\nاكتب بأسلوب قانوني أنيق بدون تنسيق ماركداون.\n\nالوثيقة:\n${text}`
+        : lang === "fr"
+        ? `Vous êtes un analyste juridique marocain spécialisé.\n\nInstructions spécifiques au type de document: ${typeHint}\n\nAnalysez le document et fournissez dans l'ordre:\n1. Type juridique précis du document\n2. Résumé du contenu principal\n3. Articles de loi mentionnés et leur référence en droit marocain\n4. Points juridiques importants\n5. Recommandations pratiques\n\nRédigez en prose élégante sans formatage markdown.\n\nDocument:\n${text}`
+        : `You are a specialized Moroccan legal analyst.\n\nDocument-type specific instructions: ${typeHint}\n\nAnalyze the document and provide in order:\n1. Precise legal document type\n2. Summary of key content\n3. Legal articles mentioned and their reference in Moroccan law\n4. Important legal points\n5. Practical recommendations\n\nWrite in elegant prose without markdown formatting.\n\nDocument:\n${text}`;
 
     const response = await fetch("https://api.cohere.com/v2/chat", {
       method: "POST",
@@ -247,6 +286,111 @@ app.post("/api/analyze-document", async (req, res) => {
     return res.json({ analysis: content });
   } catch (error) {
     return res.status(500).json({ error: "Analysis error", details: error.message });
+  }
+});
+
+/* ─── LLM Structured Extraction ─── */
+app.post("/api/extract-with-llm", async (req, res) => {
+  try {
+    const cohereKey = process.env.COHERE_API_KEY;
+    if (!cohereKey) return res.status(500).json({ error: "Missing COHERE_API_KEY" });
+
+    const { text, language } = req.body;
+    if (!text) return res.status(400).json({ error: "text is required" });
+
+    const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
+
+    const systemCtx =
+      lang === "ar"
+        ? "أنت محلل قانوني مغربي متخصص. مهمتك استخراج المعلومات من الوثيقة وإعادتها بصيغة JSON صالحة فقط، بدون أي نص إضافي."
+        : lang === "fr"
+        ? "Vous êtes un analyste juridique marocain. Extrayez les informations du document et retournez UNIQUEMENT un JSON valide, sans aucun texte supplémentaire."
+        : "You are a Moroccan legal analyst. Extract information from the document and return ONLY valid JSON, with no extra text.";
+
+    const docTypeList = "court_report|criminal_case|marriage|divorce|custody|will|lease|purchase|complaint|inheritance|general";
+
+    const prompt = `${systemCtx}
+
+Document:
+${text.slice(0, 4000)}
+
+Return ONLY this JSON object (no markdown, no explanation):
+{
+  "docType": "<one of: ${docTypeList}>",
+  "confidence": <integer 0-100>,
+  "reasoning": "<one sentence why this type>",
+  "entities": {
+    "dates":       [<up to 8 date strings found>],
+    "amounts":     [<up to 6 money amounts with currency>],
+    "articles":    [<up to 10 cited legal articles, e.g. 'المادة 306'>],
+    "parties":     [<up to 6 party names – for non-court documents>],
+    "caseNumbers": [<up to 3 case/dossier numbers>],
+    "judges":      [<up to 3 judge names>],
+    "defendants":  [<up to 4 defendant names>],
+    "charges":     [<up to 5 charge descriptions>],
+    "verdicts":    [<up to 3 verdict or judgment phrases>]
+  }
+}`;
+
+    const response = await fetch("https://api.cohere.com/v2/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cohereKey}`,
+      },
+      body: JSON.stringify({
+        model: "command-a-03-2025",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.1,
+        max_tokens: 900,
+      }),
+    });
+
+    const data = await response.json();
+    const content = data?.message?.content?.[0]?.text || null;
+
+    if (!response.ok || !content) {
+      return res.status(502).json({ error: "Cohere extraction failed", details: data });
+    }
+
+    // Strip markdown code fences if the model wraps the JSON
+    let parsed;
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("No JSON object found in model response");
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      return res.status(422).json({ error: "JSON parse failed", raw: content.slice(0, 400) });
+    }
+
+    // Validate docType
+    const validTypes = ["court_report","criminal_case","marriage","divorce","custody","will","lease","purchase","complaint","inheritance","general"];
+    if (!validTypes.includes(parsed.docType)) parsed.docType = "general";
+
+    // Sanitise entities – guarantee every key is a clean array
+    const ent = parsed.entities && typeof parsed.entities === "object" ? parsed.entities : {};
+    const take = (key, max) => Array.isArray(ent[key])
+      ? ent[key].slice(0, max).map(String).filter(Boolean)
+      : [];
+    parsed.entities = {
+      dates:       take("dates",       8),
+      amounts:     take("amounts",     6),
+      articles:    take("articles",   10),
+      parties:     take("parties",     6),
+      caseNumbers: take("caseNumbers", 3),
+      judges:      take("judges",      3),
+      defendants:  take("defendants",  4),
+      charges:     take("charges",     5),
+      verdicts:    take("verdicts",    3),
+    };
+
+    parsed.confidence = Number.isFinite(parsed.confidence)
+      ? Math.min(100, Math.max(0, Math.round(parsed.confidence)))
+      : null;
+
+    return res.json(parsed);
+  } catch (error) {
+    return res.status(500).json({ error: "Extraction error", details: error.message });
   }
 });
 
