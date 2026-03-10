@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 const API_URL = "http://localhost:8787/api/moroccan-law-qa";
 const ANALYZE_URL = "http://localhost:8787/api/analyze-document";
 const EXTRACT_URL = "http://localhost:8787/api/extract-with-llm";
+const EXPLAIN_URL = "http://localhost:8787/api/explain-concept";
 
 /* ─── Translations ─── */
 const UI = {
@@ -18,6 +19,22 @@ const UI = {
     domainsTitle: "التخصصات",
     chatTab: "محادثة",
     docTab: "تحليل الوثائق",
+    learnTab: "تعلم القانون",
+    learnTitle: "فهم المفاهيم القانونية",
+    learnDesc: "اختر مفهوماً قانونياً واحصل على شرح مبسط ومفصّل بأمثلة مغربية",
+    learnProfile: "ملفك الدراسي",
+    learnLevelLabel: "مستوى الفهم",
+    learnStyleLabel: "أسلوب الشرح",
+    learnBgLabel: "خلفيتك",
+    learnBtnLabel: "اشرح لي هذا المفهوم",
+    learnCustomLabel: "أو اكتب مفهوماً آخر",
+    learnCustomPlaceholder: "مثال: عقد الشركة، دعوى مدنية...",
+    learnReset: "شرح مفهوم جديد",
+    learnExplaining: "جاري إعداد الشرح...",
+    learnLevels: { beginner: "مبتدئ", intermediate: "متوسط", advanced: "متقدم" },
+    learnStyles: { simple: "بسيط جداً", detailed: "مع تفاصيل", technical: "تقني" },
+    learnBgs: { nonlawyer: "غير متخصص", business: "صاحب عمل", student: "طالب", parent: "ولي أمر" },
+    learnConceptsTitle: "مفاهيم شائعة",
     uploadTitle: "تحليل الوثائق القانونية",
     uploadDesc: "قم برفع وثيقة قانونية (PDF أو صورة) للحصول على تحليل قانوني مفصل",
     dropHint: "اسحب الملف هنا أو انقر للاختيار",
@@ -68,6 +85,22 @@ const UI = {
     domainsTitle: "Spécialisations",
     chatTab: "Chat",
     docTab: "Analyse de Documents",
+    learnTab: "Apprendre",
+    learnTitle: "Comprendre les Concepts Juridiques",
+    learnDesc: "Choisissez un concept et obtenez une explication simple avec des exemples marocains",
+    learnProfile: "Votre profil",
+    learnLevelLabel: "Niveau",
+    learnStyleLabel: "Style",
+    learnBgLabel: "Profil",
+    learnBtnLabel: "Expliquez-moi ce concept",
+    learnCustomLabel: "Ou tapez un concept",
+    learnCustomPlaceholder: "Ex\u00a0: contrat de société, action civile...",
+    learnReset: "Expliquer un autre concept",
+    learnExplaining: "Préparation de l'explication...",
+    learnLevels: { beginner: "Débutant", intermediate: "Intermédiaire", advanced: "Avancé" },
+    learnStyles: { simple: "Très simple", detailed: "Avec détails", technical: "Technique" },
+    learnBgs: { nonlawyer: "Non-spécialiste", business: "Chef d'entreprise", student: "Étudiant", parent: "Parent" },
+    learnConceptsTitle: "Concepts populaires",
     uploadTitle: "Analyse de Documents Juridiques",
     uploadDesc: "Téléchargez un document juridique (PDF ou image) pour obtenir une analyse détaillée",
     dropHint: "Glissez le fichier ici ou cliquez pour choisir",
@@ -118,6 +151,22 @@ const UI = {
     domainsTitle: "Specializations",
     chatTab: "Chat",
     docTab: "Document Analysis",
+    learnTab: "Learn Law",
+    learnTitle: "Understand Legal Concepts",
+    learnDesc: "Pick a concept and get a plain-language explanation with real Moroccan examples",
+    learnProfile: "Your profile",
+    learnLevelLabel: "Level",
+    learnStyleLabel: "Style",
+    learnBgLabel: "Background",
+    learnBtnLabel: "Explain this concept to me",
+    learnCustomLabel: "Or type a concept",
+    learnCustomPlaceholder: "e.g. company contract, civil claim...",
+    learnReset: "Explain another concept",
+    learnExplaining: "Preparing explanation...",
+    learnLevels: { beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced" },
+    learnStyles: { simple: "Very simple", detailed: "Some detail", technical: "Technical" },
+    learnBgs: { nonlawyer: "Non-lawyer", business: "Business owner", student: "Student", parent: "Parent" },
+    learnConceptsTitle: "Popular concepts",
     uploadTitle: "Legal Document Analysis",
     uploadDesc: "Upload a legal document (PDF or image) to get a detailed legal analysis",
     dropHint: "Drag file here or click to choose",
@@ -206,6 +255,52 @@ const legalDomains = {
   ],
 };
 
+/* ─── Legal Concepts Catalogue ─── */
+const learnConcepts = {
+  ar: [
+    { id: "limitation", label: "التقادم", sub: "مدة التقاضي القانونية" },
+    { id: "custody", label: "الحضانة", sub: "حقوق رعاية الأطفال" },
+    { id: "mahr", label: "الصداق / المهر", sub: "حق مالي في عقد الزواج" },
+    { id: "alimony", label: "النفقة", sub: "واجب الإعالة القانوني" },
+    { id: "inheritance", label: "الإرث والتركة", sub: "قسمة الممتلكات بعد الوفاة" },
+    { id: "lease", label: "عقد الكراء", sub: "حقوق المكري والمكتري" },
+    { id: "presumption", label: "قرينة البراءة", sub: "أساس العدالة الجنائية" },
+    { id: "bail", label: "الكفالة والإيداع", sub: "ضمان الحضور أمام القضاء" },
+    { id: "force_majeure", label: "القوة القاهرة", sub: "إعفاء من المسؤولية التعاقدية" },
+    { id: "defamation", label: "القذف والتشهير", sub: "جريمة الإخلال بالشرف" },
+    { id: "power_of_attorney", label: "الوكالة القانونية", sub: "التفويض بالتصرف القانوني" },
+    { id: "nullity", label: "بطلان العقد", sub: "شروط إلغاء التعاقد" },
+  ],
+  fr: [
+    { id: "limitation", label: "Prescription / Délai légal", sub: "Délai pour agir en justice" },
+    { id: "custody", label: "Garde d'enfants", sub: "Droits de garde après divorce" },
+    { id: "mahr", label: "Douaire (Sadaq)", sub: "Droit financier du contrat de mariage" },
+    { id: "alimony", label: "Pension alimentaire", sub: "Obligation légale d'entretien" },
+    { id: "inheritance", label: "Succession et héritage", sub: "Partage des biens après décès" },
+    { id: "lease", label: "Contrat de bail", sub: "Droits bailleur et locataire" },
+    { id: "presumption", label: "Présomption d'innocence", sub: "Fondement de la justice pénale" },
+    { id: "bail", label: "Liberté provisoire / Caution", sub: "Garantie de comparution" },
+    { id: "force_majeure", label: "Force majeure", sub: "Exonération de responsabilité" },
+    { id: "defamation", label: "Diffamation / Calomnie", sub: "Atteinte à l'honneur" },
+    { id: "power_of_attorney", label: "Procuration", sub: "Délégation d'actes juridiques" },
+    { id: "nullity", label: "Nullité du contrat", sub: "Conditions d'annulation" },
+  ],
+  en: [
+    { id: "limitation", label: "Statute of Limitations", sub: "Legal deadlines to file a case" },
+    { id: "custody", label: "Child Custody", sub: "Rights over children after divorce" },
+    { id: "mahr", label: "Dower / Mahr", sub: "Financial right in marriage contract" },
+    { id: "alimony", label: "Alimony / Support", sub: "Legal duty to provide maintenance" },
+    { id: "inheritance", label: "Inheritance & Estate", sub: "Division of assets after death" },
+    { id: "lease", label: "Lease Agreement", sub: "Landlord and tenant rights" },
+    { id: "presumption", label: "Presumption of Innocence", sub: "Cornerstone of criminal justice" },
+    { id: "bail", label: "Bail / Provisional Release", sub: "Guarantee of court appearance" },
+    { id: "force_majeure", label: "Force Majeure", sub: "Exemption from contractual liability" },
+    { id: "defamation", label: "Defamation / Slander", sub: "Offense against dignity and honor" },
+    { id: "power_of_attorney", label: "Power of Attorney", sub: "Delegating legal authority" },
+    { id: "nullity", label: "Contract Nullity", sub: "Conditions for voiding a contract" },
+  ],
+};
+
 /* ─── CSS keyframes ─── */
 const styleId = "mlq-styles";
 if (typeof document !== "undefined" && !document.getElementById(styleId)) {
@@ -255,7 +350,7 @@ export default function MoroccanLawQA() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState("chat"); // "chat" | "doc"
+  const [mode, setMode] = useState("chat"); // "chat" | "doc" | "learn"
   const [docState, setDocState] = useState("idle"); // "idle" | "extracting" | "analyzing" | "done"
   const [extractedText, setExtractedText] = useState("");
   const [analysis, setAnalysis] = useState("");
@@ -263,6 +358,14 @@ export default function MoroccanLawQA() {
   const [dragOver, setDragOver] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [docIntelligence, setDocIntelligence] = useState(null);
+  // Learn mode state
+  const [learnConcept, setLearnConcept] = useState("");    // selected concept id or custom text
+  const [learnCustom, setLearnCustom] = useState("");       // free-text input
+  const [learnLevel, setLearnLevel] = useState("beginner");
+  const [learnStyle, setLearnStyle] = useState("simple");
+  const [learnBg, setLearnBg] = useState("nonlawyer");
+  const [learnResult, setLearnResult] = useState("");
+  const [learnLoading, setLearnLoading] = useState(false);
   const endRef = useRef(null);
   const fileRef = useRef(null);
 
@@ -307,6 +410,34 @@ export default function MoroccanLawQA() {
   }
 
   const chat = messages.length > 0;
+
+  /* ── Legal Concept Explainer ── */
+  async function explainConcept() {
+    const conceptText = learnCustom.trim() || learnConcept;
+    if (!conceptText || learnLoading) return;
+    setLearnResult("");
+    setLearnLoading(true);
+    try {
+      const res = await fetch(EXPLAIN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          concept: conceptText,
+          language,
+          level: learnLevel,
+          style: learnStyle,
+          background: learnBg,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Explanation failed");
+      setLearnResult(data.explanation);
+    } catch (err) {
+      setLearnResult(err.message || "Error generating explanation.");
+    } finally {
+      setLearnLoading(false);
+    }
+  }
 
   /* ── Document processing ── */
   function getTesseractLang() {
@@ -893,6 +1024,7 @@ export default function MoroccanLawQA() {
           {[
             { m: "chat", l: t.chatTab },
             { m: "doc", l: t.docTab },
+            { m: "learn", l: t.learnTab },
           ].map(({ m, l }) => {
             const on = mode === m;
             return (
@@ -1186,6 +1318,109 @@ export default function MoroccanLawQA() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        ) : mode === "learn" ? (
+          /* ── Legal Concepts Learn View ── */
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
+            {learnResult ? (
+              /* ── Result ── */
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 10 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                  <span style={{ fontSize: 13, color: P.text, fontFamily: ff, flex: 1 }}>{learnCustom.trim() || learnConcepts[language].find(c => c.id === learnConcept)?.label || learnConcept}</span>
+                  <button onClick={() => { setLearnResult(""); setLearnCustom(""); setLearnConcept(""); }} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, background: "transparent", color: P.gold, border: `1px solid ${P.gold}40`, borderRadius: 6, cursor: "pointer", fontFamily: ff }}>{t.learnReset}</button>
+                </div>
+                <div style={{ background: P.bgCard, border: `1px solid ${P.gold}30`, borderRadius: 12, overflow: "hidden", animation: `fadeUp 400ms ${E} forwards` }}>
+                  <div style={{ padding: "12px 16px", borderBottom: `1px solid ${P.gold}25`, display: "flex", alignItems: "center", gap: 8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: P.gold }}>{t.learnTitle}</span>
+                    <div style={{ marginInlineStart: "auto", display: "flex", gap: 6 }}>
+                      <button onClick={() => copyToClipboard(learnResult, "learn")} style={{ padding: "3px 10px", fontSize: 11, fontWeight: 600, fontFamily: ff, background: "transparent", color: copiedId === "learn" ? P.gold : P.textDim, border: `1px solid ${copiedId === "learn" ? P.gold + "40" : P.border}`, borderRadius: 6, cursor: "pointer", transition: `all 200ms ${E}` }}>{copiedId === "learn" ? t.copied : t.copy}</button>
+                    </div>
+                  </div>
+                  <div style={{ padding: 20, fontSize: 14, lineHeight: 1.9, color: P.textMid, whiteSpace: "pre-wrap", fontFamily: ff, direction: rtl ? "rtl" : "ltr" }}>{learnResult}</div>
+                </div>
+              </div>
+            ) : (
+              /* ── Picker ── */
+              <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+                {/* Hero */}
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ width: 52, height: 52, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg,${P.gold}18,${P.gold}08)`, border: `1px solid ${P.gold}30`, borderRadius: 14 }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                  </div>
+                  <h2 style={{ fontSize: rtl ? 24 : 26, fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.learnTitle}</h2>
+                  <p style={{ fontSize: 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.learnDesc}</p>
+                </div>
+
+                {/* Profile selectors */}
+                <div style={{ background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 12, padding: "16px 20px", display: "flex", flexWrap: "wrap", gap: 20 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em", width: "100%" }}>{t.learnProfile}</span>
+                  {[
+                    { label: t.learnLevelLabel, key: "level", state: learnLevel, set: setLearnLevel, opts: Object.entries(t.learnLevels) },
+                    { label: t.learnStyleLabel, key: "style", state: learnStyle, set: setLearnStyle, opts: Object.entries(t.learnStyles) },
+                    { label: t.learnBgLabel,    key: "bg",    state: learnBg,    set: setLearnBg,    opts: Object.entries(t.learnBgs) },
+                  ].map(({ label, state, set, opts }) => (
+                    <div key={label} style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 120 }}>
+                      <span style={{ fontSize: 11, color: P.textDim }}>{label}</span>
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                        {opts.map(([k, v]) => {
+                          const active = state === k;
+                          return (
+                            <button key={k} onClick={() => set(k)} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, fontFamily: ff, background: active ? P.gold : "transparent", color: active ? P.bg : P.textDim, border: `1px solid ${active ? P.gold : P.border}`, borderRadius: 20, cursor: "pointer", transition: `all 200ms ${E}` }}>{v}</button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Concept grid */}
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 12 }}>{t.learnConceptsTitle}</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8 }}>
+                    {learnConcepts[language].map((c) => {
+                      const active = learnConcept === c.id && !learnCustom.trim();
+                      return (
+                        <button key={c.id} onClick={() => { setLearnConcept(c.id); setLearnCustom(""); }}
+                          style={{ padding: "12px 14px", background: active ? `${P.gold}18` : P.bgCard, border: `1px solid ${active ? P.gold + "60" : P.border}`, borderRadius: 10, cursor: "pointer", textAlign: rtl ? "right" : "left", transition: `all 200ms ${E}`, fontFamily: ff }}
+                          onMouseEnter={(e) => { if (!active) { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.background = P.bgHover; } }}
+                          onMouseLeave={(e) => { if (!active) { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.background = P.bgCard; } }}
+                        >
+                          <div style={{ fontSize: 13, fontWeight: 600, color: active ? P.gold : P.text, marginBottom: 3 }}>{c.label}</div>
+                          <div style={{ fontSize: 11, color: P.textDim }}>{c.sub}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom concept input */}
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>{t.learnCustomLabel}</p>
+                  <input
+                    type="text" value={learnCustom}
+                    onChange={(e) => { setLearnCustom(e.target.value); if (e.target.value) setLearnConcept(""); }}
+                    placeholder={t.learnCustomPlaceholder}
+                    style={{ width: "100%", height: 44, padding: "0 14px", fontSize: 13, fontFamily: ff, color: P.text, background: P.bgInput, border: `1px solid ${P.border}`, borderRadius: 10, outline: "none", boxSizing: "border-box", direction: rtl ? "rtl" : "ltr", transition: `all 200ms ${E}` }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.boxShadow = `0 0 0 3px ${P.gold}12`; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.boxShadow = "none"; }}
+                    onKeyDown={(e) => { if (e.key === "Enter") explainConcept(); }}
+                  />
+                </div>
+
+                {/* Explain button */}
+                <button onClick={explainConcept} disabled={learnLoading || (!learnConcept && !learnCustom.trim())}
+                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: (learnLoading || (!learnConcept && !learnCustom.trim())) ? P.bgHover : P.gold, color: (learnLoading || (!learnConcept && !learnCustom.trim())) ? P.textDim : P.bg, border: "none", borderRadius: 12, cursor: (learnLoading || (!learnConcept && !learnCustom.trim())) ? "default" : "pointer", transition: `all 250ms ${E}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                  {learnLoading ? (
+                    <>
+                      <span>{t.learnExplaining}</span>
+                      <div style={{ display: "flex", gap: 4 }}>{[0,1,2].map(d => <span key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", animation: `dots 1.4s infinite ${d*0.2}s` }} />)}</div>
+                    </>
+                  ) : t.learnBtnLabel}
+                </button>
               </div>
             )}
           </div>

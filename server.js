@@ -394,6 +394,183 @@ Return ONLY this JSON object (no markdown, no explanation):
   }
 });
 
+/* ─── Legal Concept Explainer ─── */
+app.post("/api/explain-concept", async (req, res) => {
+  try {
+    const cohereKey = process.env.COHERE_API_KEY;
+    if (!cohereKey) return res.status(500).json({ error: "Missing COHERE_API_KEY" });
+
+    const { concept, language, level, style, background } = req.body;
+    if (!concept || typeof concept !== "string" || concept.trim().length === 0)
+      return res.status(400).json({ error: "concept is required" });
+
+    const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
+
+    const levelMap = {
+      ar: { beginner: "مبتدئ", intermediate: "متوسط", advanced: "متقدم" },
+      fr: { beginner: "débutant", intermediate: "intermédiaire", advanced: "avancé" },
+      en: { beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced" },
+    };
+    const styleMap = {
+      ar: { simple: "بسيط جداً وسهل الفهم", detailed: "مع تفاصيل إضافية", technical: "تقني ودقيق" },
+      fr: { simple: "très simple et accessible", detailed: "avec des détails supplémentaires", technical: "technique et précis" },
+      en: { simple: "very simple and easy to follow", detailed: "with additional detail", technical: "technical and precise" },
+    };
+    const bgMap = {
+      ar: { nonlawyer: "شخص عادي غير متخصص في القانون", business: "صاحب عمل أو تاجر", student: "طالب", parent: "ولي أمر أو أحد الوالدين" },
+      fr: { nonlawyer: "non-spécialiste du droit", business: "chef d'entreprise ou commerçant", student: "étudiant(e)", parent: "parent ou tuteur" },
+      en: { nonlawyer: "a non-lawyer member of the public", business: "a business owner or entrepreneur", student: "a student", parent: "a parent or guardian" },
+    };
+
+    const lvl = (levelMap[lang] || levelMap.ar)[level] || levelMap[lang].beginner;
+    const sty = (styleMap[lang] || styleMap.ar)[style] || styleMap[lang].simple;
+    const bg  = (bgMap[lang]   || bgMap.ar)[background]  || bgMap[lang].nonlawyer;
+
+    const conceptSafe = concept.trim().slice(0, 300);
+
+    const prompt = lang === "ar"
+      ? `أنت مُعلِّم قانوني مغربي متخصص يشرح المفاهيم القانونية بأسلوب واضح ومبسط.
+
+ملف المستخدم:
+- مستوى الفهم: ${lvl}
+- أسلوب الشرح المطلوب: ${sty}
+- خلفية المستخدم: ${bg}
+
+المفهوم القانوني: ${conceptSafe}
+
+اشرح هذا المفهوم بالتفصيل مراعياً ملف المستخدم أعلاه، وفق هذا الهيكل الإلزامي:
+
+١. التعريف البسيط
+جملة واحدة يفهمها أي شخص.
+
+٢. لماذا يهمك هذا المفهوم؟
+ثلاثة أسباب عملية مرتبطة بحياة المستخدم اليومية في المغرب.
+
+٣. كيف يعمل؟ (خطوات بسيطة)
+اشرح الآلية القانونية في ٣ إلى ٥ خطوات واضحة.
+
+٤. مثال مغربي واقعي
+قدّم سيناريو حقيقي يمكن أن يحدث في المغرب مع توضيح كيف ينطبق المفهوم.
+
+٥. ماذا يحدث إذا تجاهلت هذا المفهوم؟
+اذكر ثلاثة عواقب محتملة من الأقل إلى الأشد خطورة.
+
+٦. ما الذي يجب فعله عملياً؟
+قدّم قائمة تحقق من ٤ إلى ٦ إجراءات قابلة للتنفيذ.
+
+٧. الأخطاء الشائعة
+اذكر خطأين أو ثلاثة أخطاء يقع فيها الناس وكيف تتجنبها.
+
+٨. في القانون المغربي تحديداً
+اذكر القوانين والمواد المغربية ذات الصلة (مدونة الأسرة، القانون الجنائي، قانون الالتزامات والعقود...).
+
+٩. الخلاصة في جملة واحدة
+أهم شيء يجب تذكره.
+
+اكتب بأسلوب ودود ومباشر، واستخدم "أنت" ليشعر القارئ بأنك تخاطبه مباشرة. تجنب المصطلحات القانونية المعقدة إلا إذا شرحتها فوراً.`
+      : lang === "fr"
+      ? `Vous êtes un éducateur juridique marocain spécialisé qui explique les concepts juridiques de manière claire et accessible.
+
+Profil de l'utilisateur :
+- Niveau de compréhension : ${lvl}
+- Style d'explication souhaité : ${sty}
+- Profil de l'utilisateur : ${bg}
+
+Concept juridique : ${conceptSafe}
+
+Expliquez ce concept en détail en tenant compte du profil ci-dessus, selon cette structure obligatoire :
+
+1. DÉFINITION SIMPLE
+Une phrase compréhensible par tout le monde.
+
+2. POURQUOI C'EST IMPORTANT POUR VOUS ?
+Trois raisons pratiques liées à la vie quotidienne au Maroc.
+
+3. COMMENT ÇA FONCTIONNE ? (Étapes simples)
+Expliquez le mécanisme en 3 à 5 étapes claires.
+
+4. EXEMPLE MAROCAIN CONCRET
+Un scénario réel qui peut se produire au Maroc avec application du concept.
+
+5. QUE SE PASSE-T-IL SI VOUS IGNOREZ CE CONCEPT ?
+Trois conséquences possibles, de la moins grave à la plus grave.
+
+6. QUE FAIRE CONCRÈTEMENT ?
+Une liste de vérification de 4 à 6 actions réalisables.
+
+7. ERREURS COURANTES
+Deux ou trois erreurs fréquentes et comment les éviter.
+
+8. EN DROIT MAROCAIN SPÉCIFIQUEMENT
+Lois et articles marocains applicables (Code de la Famille, Code Pénal, DOC...).
+
+9. L'ESSENTIEL EN UNE PHRASE
+La chose la plus importante à retenir.
+
+Écrivez dans un style amical et direct, en utilisant "vous" pour s'adresser directement au lecteur. Évitez le jargon juridique sauf si vous l'expliquez immédiatement.`
+      : `You are a Moroccan legal educator who explains legal concepts in clear, accessible language.
+
+User profile:
+- Understanding level: ${lvl}
+- Explanation style: ${sty}
+- User background: ${bg}
+
+Legal concept: ${conceptSafe}
+
+Explain this concept in detail adapted to the profile above, following this mandatory structure:
+
+1. SIMPLE DEFINITION
+One sentence anyone can understand.
+
+2. WHY DOES THIS MATTER TO YOU?
+Three practical reasons connected to daily life in Morocco.
+
+3. HOW DOES IT WORK? (Simple steps)
+Explain the mechanism in 3 to 5 clear steps.
+
+4. REAL MOROCCAN EXAMPLE
+A realistic scenario that could happen in Morocco showing the concept in action.
+
+5. WHAT HAPPENS IF YOU IGNORE THIS CONCEPT?
+Three possible consequences, from least to most serious.
+
+6. WHAT CAN YOU DO PRACTICALLY?
+A checklist of 4 to 6 actionable steps.
+
+7. COMMON MISTAKES
+Two or three frequent mistakes and how to avoid them.
+
+8. IN MOROCCAN LAW SPECIFICALLY
+Relevant Moroccan laws and articles (Family Code, Penal Code, Obligations & Contracts...).
+
+9. THE KEY TAKEAWAY IN ONE SENTENCE
+The single most important thing to remember.
+
+Write in a friendly, direct style using "you" to address the reader. Avoid legal jargon unless immediately explained.`;
+
+    const response = await fetch("https://api.cohere.com/v2/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${cohereKey}` },
+      body: JSON.stringify({
+        model: "command-a-03-2025",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.5,
+        max_tokens: 2800,
+      }),
+    });
+
+    const data = await response.json();
+    const content = data?.message?.content?.[0]?.text || null;
+    if (!response.ok || !content) {
+      return res.status(502).json({ error: "Cohere explanation failed", details: data });
+    }
+
+    return res.json({ explanation: content });
+  } catch (error) {
+    return res.status(500).json({ error: "Explanation error", details: error.message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Moroccan Law QA proxy listening on http://localhost:${port}`);
 });
