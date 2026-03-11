@@ -153,6 +153,42 @@ const DOMAIN_PROMPTS = {
   general: `For broad legal questions, provide a concise general explanation, reference any relevant articles from the LEGAL REFERENCE DATA if applicable, and maintain elegance, clarity, and legal precision.`,
 };
 
+// ── Off-topic guard ──────────────────────────────────────────────────────────
+const LEGAL_KEYWORDS = [
+  // English
+  "law","legal","court","judge","lawyer","attorney","lawsuit","case","penalty","fine","prison",
+  "sentence","statute","article","code","regulation","verdict","appeal","complaint","police",
+  "rights","right","contract","crime","criminal","divorce","marriage","custody","inheritance",
+  "theft","fraud","assault","lease","obligation","damages","arrest","trial","investigation",
+  "jurisdiction","offence","offense","misdemeanor","felony","prosecution","defendant","plaintiff",
+  // French
+  "loi","droit","droits","tribunal","juge","avocat","plainte","jugement","peine","amende",
+  "appel","procès","contrat","bail","crime","infraction","mariage","divorce","garde",
+  "succession","héritage","héritage","procédure","inculpé","prévenu","témoin","gendarmerie",
+  // Arabic
+  "قانون","حق","حقوق","محكمة","قاضي","محامي","دعوى","شكوى","حكم","مادة","عقوبة","سجن",
+  "غرامة","قانوني","مخالفة","جريمة","بلاغ","دستور","وثيقة","عقد","إجراء","استئناف",
+  "توقيف","تقادم","اختصاص","شرطة","زواج","طلاق","حضانة","إرث","ميراث","نفقة","مهر",
+  "خلع","سرقة","اعتداء","إرهاب","رشوة","مدونة","مسطرة","نيابة","وكيل","جنائي","جنحة",
+  "جناية","تعويض","إخلال","بيع","شراء","كراء","التزام","محاكمة","تحقيق","ضحية","متهم",
+  // Darija transliterations / common Darija legal phrasing
+  "محكمه","شكاية","الحضانة","الطلاق","الزواج","العقوبة","الجريمة","الحق","القانون",
+  "الوراثة","الكراء","الحكم","القضية","وراثة","ميراث","الكراء",
+];
+
+const OFF_TOPIC_RESPONSES = {
+  ar: "سؤالك لا يتعلق بالقانون المغربي. أنا مساعد قانوني متخصص في القانون المغربي فقط، ولا أستطيع الإجابة على أسئلة خارج هذا النطاق. إذا كان لديك سؤال قانوني يخص القانون المغربي، يسعدني مساعدتك.",
+  fr: "Votre question ne porte pas sur le droit marocain. Je suis un assistant juridique spécialisé uniquement dans le droit marocain et je ne peux pas répondre à des questions hors de ce domaine. Si vous avez une question juridique concernant le droit marocain, je serai heureux de vous aider.",
+  en: "Your question does not appear to be related to Moroccan law. I am a legal assistant specialized exclusively in Moroccan law and cannot answer questions outside this scope. If you have a legal question concerning Moroccan law, I would be happy to help.",
+  dar: "سؤالك ماشيش متعلق بالقانون المغربي. أنا مساعد قانوني متخصص فقط في القانون المغربي، وما كنقدرش نجاوب على أسئلة خارج هاد النطاق. إذا عندك سؤال قانوني على القانون المغربي، يسرني نعاونك.",
+};
+
+function isLegallyRelevant(userText, standardArabic) {
+  const combined = `${userText || ""} ${standardArabic || ""}`.toLowerCase();
+  return LEGAL_KEYWORDS.some((k) => combined.includes(k));
+}
+
+// ── Domain classifier ────────────────────────────────────────────────────────
 function detectDomain(text) {
   const t = (text || "").toLowerCase();
 
@@ -256,12 +292,20 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
     const lastUserMessage = [...inputMessages].reverse().find((m) => m?.role === "user")?.content || "";
     // Log user query (visible in Vercel dashboard → Functions → Logs)
     console.log(JSON.stringify({ ts: new Date().toISOString(), lang, q: lastUserMessage.slice(0, 300) }));
+
+    // ── Off-topic guard ────────────────────────────────────────────────────
+    const standardArabicText = req.body?.standardArabic || "";
+    if (!isLegallyRelevant(lastUserMessage, standardArabicText)) {
+      const offTopicMsg = OFF_TOPIC_RESPONSES[lang] || OFF_TOPIC_RESPONSES.ar;
+      return res.json({ content: offTopicMsg, offTopic: true });
+    }
+
     // For Darija, use standard Arabic conversion for domain detection if provided by client
-    const textForDomain = (lang === "dar" && req.body?.standardArabic) ? req.body.standardArabic : lastUserMessage;
+    const textForDomain = (lang === "dar" && standardArabicText) ? standardArabicText : lastUserMessage;
     const domain = detectDomain(textForDomain);
     // Combine last user message with standardArabic conversion for better RAG retrieval on Darija queries
-    const textForRAG = req.body?.standardArabic
-      ? `${lastUserMessage} ${req.body.standardArabic}`
+    const textForRAG = standardArabicText
+      ? `${lastUserMessage} ${standardArabicText}`
       : lastUserMessage;
     // Accept client-detected Darija intent for intent-specific prompt injection
     const darijaIntent = (lang === "dar" && req.body?.darijaIntent) ? String(req.body.darijaIntent).slice(0, 50) : null;
@@ -291,14 +335,45 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
     const message = data?.choices?.[0]?.message;
     const content = message?.content || message?.reasoning || null;
 
-    if (!response.ok || !content) {
-      return res.status(502).json({
-        error: "OpenRouter request failed",
-        details: data,
-      });
+    if (response.ok && content) {
+      return res.json({ content });
     }
 
-    return res.json({ content });
+    console.warn("[QA] OpenRouter failed, trying Cohere fallback. Status:", response.status, JSON.stringify(data).slice(0, 200));
+
+    // ── Fallback: Cohere command-a-03-2025 ────────────────────────────────
+    const cohereKey = process.env.COHERE_API_KEY;
+    if (cohereKey) {
+      try {
+        const fallbackRes = await fetch("https://api.cohere.com/v2/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${cohereKey}`,
+          },
+          body: JSON.stringify({
+            model: "command-a-03-2025",
+            messages,
+            temperature: 0.4,
+            max_tokens: 2500,
+          }),
+        });
+        const fallbackData = await fallbackRes.json();
+        const fallbackContent = fallbackData?.message?.content?.[0]?.text || null;
+        if (fallbackRes.ok && fallbackContent) {
+          return res.json({ content: fallbackContent });
+        }
+        console.error("[QA] Cohere fallback also failed:", JSON.stringify(fallbackData).slice(0, 200));
+      } catch (fallbackErr) {
+        console.error("[QA] Cohere fallback fetch error:", fallbackErr.message);
+      }
+    }
+
+    // Both providers failed
+    return res.status(502).json({
+      error: "Both primary and fallback AI providers failed. Please try again.",
+      details: data,
+    });
   } catch (error) {
     return res.status(500).json({
       error: "Internal server error",
