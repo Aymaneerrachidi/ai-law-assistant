@@ -1569,9 +1569,9 @@ export default function MoroccanLawQA() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <AdalaLogo />
-            <span style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: P.gold, letterSpacing: "0.5px", fontFamily: F }}>adalaapp</span>
+            <span style={{ fontSize: isMobile ? 16 : 19, fontWeight: 600, color: P.gold, letterSpacing: "0.3px", fontFamily: '"Playfair Display", serif' }}>adalaapp</span>
           </div>
-          <div style={{ display: "flex", gap: 4 }}>
+          <div style={{ display: "flex", gap: 4, marginLeft: isMobile ? 0 : 24, marginRight: rtl ? 24 : 0 }}>
             {[
               { c: "dar", l: "دارجة" },
               { c: "ar", l: "ع" },
