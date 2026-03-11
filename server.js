@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { getLegalContext, SENTENCING_KB } from "./legal-kb.js";
+import { retrieveTopChunks } from "./ragSystem.js";
 
 dotenv.config();
 
@@ -134,11 +135,20 @@ function buildSystemPrompt(language, domain, userText) {
   const primary = PRIMARY_SYSTEM_PROMPTS[lang] || PRIMARY_SYSTEM_PROMPTS["ar"];
   const domainPrompt = DOMAIN_PROMPTS[domain] || DOMAIN_PROMPTS.general;
 
-  // Inject relevant legal reference data from the knowledge base
-  const legalContext = getLegalContext(domain, userText);
+  // RAG: retrieve most relevant article chunks by cosine similarity
+  const ragChunks = retrieveTopChunks(userText, 4);
+  // KB: existing keyword-based full-section context (complementary)
+  const kbContext = getLegalContext(domain, userText);
   const sentencingNeeded = /penalt|sentence|prison|fine|amendе|emprisonnement|عقوبة|سجن|غرامة/.test((userText || "").toLowerCase());
-  const legalCtxBlock = legalContext
-    ? `\n\nLEGAL REFERENCE DATA (use these exact article numbers and penalties in your answer):\n${legalContext}${sentencingNeeded ? "\n\n" + SENTENCING_KB : ""}`
+
+  // Build combined context block: RAG first (most relevant), then full KB section
+  const contextParts = [];
+  if (ragChunks) contextParts.push(`MOST RELEVANT ARTICLES (ranked by relevance):\n${ragChunks}`);
+  if (kbContext) contextParts.push(`FULL LEGAL REFERENCE:\n${kbContext}`);
+  if (sentencingNeeded) contextParts.push(SENTENCING_KB);
+
+  const legalCtxBlock = contextParts.length
+    ? `\n\nLEGAL REFERENCE DATA (use these exact article numbers and penalties in your answer):\n${contextParts.join("\n\n---\n\n")}`
     : "";
 
   const langOverride =
@@ -185,7 +195,11 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
     // For Darija, use standard Arabic conversion for domain detection if provided by client
     const textForDomain = (lang === "dar" && req.body?.standardArabic) ? req.body.standardArabic : lastUserMessage;
     const domain = detectDomain(textForDomain);
-    const systemPrompt = buildSystemPrompt(lang, domain, lastUserMessage);
+    // Combine last user message with standardArabic conversion for better RAG retrieval on Darija queries
+    const textForRAG = req.body?.standardArabic
+      ? `${lastUserMessage} ${req.body.standardArabic}`
+      : lastUserMessage;
+    const systemPrompt = buildSystemPrompt(lang, domain, textForRAG);
 
     const messages = [
       { role: "system", content: systemPrompt },
