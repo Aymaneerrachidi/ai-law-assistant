@@ -1536,10 +1536,7 @@ export default function MoroccanLawQA() {
   );
 
   const AdalaLogo = () => (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="16,2 30,9 30,23 16,30 2,23 2,9" fill={`${P.gold}18`} stroke={P.gold} strokeWidth="1.5"/>
-      <path d="M16 8 L11 22 M16 8 L21 22 M12.5 17 L19.5 17" stroke={P.gold} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+    <img src="/img/logo.png" alt="adalaapp logo" width="32" height="32" style={{ borderRadius: 6, objectFit: "contain", display: "block" }} />
   );
 
   return (
