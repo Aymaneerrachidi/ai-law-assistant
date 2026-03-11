@@ -213,7 +213,7 @@ app.post("/api/ocr", async (req, res) => {
     const { base64Image, language } = req.body;
     if (!base64Image) return res.status(400).json({ error: "base64Image is required" });
 
-    const ocrLang = language === "ar" ? "ara" : language === "fr" ? "fre" : "eng";
+    const ocrLang = (language === "ar" || language === "dar") ? "ara" : language === "fr" ? "fre" : "eng";
 
     const formBody = new URLSearchParams();
     formBody.append("apikey", ocrKey);
@@ -595,6 +595,124 @@ Write in a friendly, direct style using "you" to address the reader. Avoid legal
     return res.json({ explanation: content });
   } catch (error) {
     return res.status(500).json({ error: "Explanation error", details: error.message });
+  }
+});
+
+/* ─── Contract Drafting ─── */
+app.post("/api/draft-contract", async (req, res) => {
+  try {
+    const cohereKey = process.env.COHERE_API_KEY;
+    if (!cohereKey) return res.status(500).json({ error: "Missing COHERE_API_KEY" });
+    const { contractType, params, language } = req.body;
+    if (!contractType) return res.status(400).json({ error: "contractType required" });
+    const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
+    const paramStr = Object.entries(params || {}).filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`).join("\n");
+    const typeLabelMap = {
+      ar: { marriage: "عقد زواج", lease: "عقد كراء", sale: "عقد بيع" },
+      fr: { marriage: "contrat de mariage", lease: "contrat de bail", sale: "contrat de vente" },
+      en: { marriage: "marriage contract", lease: "lease agreement", sale: "sale contract" },
+    };
+    const typeLabel = (typeLabelMap[lang] || typeLabelMap.ar)[contractType] || contractType;
+    const prompt = lang === "ar"
+      ? `أنت محامٍ مغربي متخصص. أنشئ ${typeLabel} قانونياً كاملاً وفق القانون المغربي بناءً على البيانات التالية:\n\n${paramStr || "(بيانات غير مكتملة)"}\n\nالعقد يجب أن:\n- يتضمن ديباجة قانونية\n- يذكر أسماء الأطراف وبياناتهم\n- يحتوي على جميع البنود الإلزامية وفق القانون المغربي\n- يُحيل إلى المواد القانونية ذات الصلة\n- يتضمن بنوداً للفسخ والنزاعات\n- ينتهي بخانات التوقيع\n- لا يحتوي على أي أجزاء محذوفة أو معتمة أو [محذوف] أو أي علامات حذف\n- يكون كاملاً ومفصلاً دون حذف أي معلومات\n\naكتب العقد كاملاً جاهزاً للطباعة:`
+      : lang === "fr"
+      ? `Vous êtes un avocat marocain spécialisé. Rédigez un ${typeLabel} complet et légalement valide selon la loi marocaine à partir des données suivantes:\n\n${paramStr || "(données incomplètes)"}\n\nLe contrat doit:\n- Inclure un préambule juridique\n- Mentionner les parties et leurs coordonnées\n- Contenir toutes les clauses obligatoires selon le droit marocain\n- Référencer les articles de loi pertinents\n- Inclure des clauses de résiliation et de règlement des litiges\n- Se terminer par des blocs de signature\n- Ne contenir aucune partie supprimée, masquée ou [supprimé] ou marques de suppression\n- Être complet et détaillé sans omission d'informations\n\nRédigez le contrat complet prêt à imprimer:`
+      : `You are a Moroccan legal specialist. Draft a complete, legally sound ${typeLabel} under Moroccan law using these details:\n\n${paramStr || "(incomplete data)"}\n\nThe contract must:\n- Include a legal preamble\n- Name and describe both parties\n- Contain all mandatory clauses under Moroccan law\n- Reference relevant legal articles\n- Include termination and dispute resolution clauses\n- End with signature blocks\n- Contain no redacted, blacked-out, or [REDACTED] sections or redaction marks\n- Be complete and detailed without omitting any information\n\nWrite the complete contract ready to print:`;
+    const response = await fetch("https://api.cohere.com/v2/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${cohereKey}` },
+      body: JSON.stringify({ model: "command-a-03-2025", messages: [{ role: "user", content: prompt }], temperature: 0.3, max_tokens: 3000 }),
+    });
+    const data = await response.json();
+    const content = data?.message?.content?.[0]?.text || null;
+    if (!response.ok || !content) return res.status(502).json({ error: "Cohere draft failed", details: data });
+    
+    // Remove any redactions or blacked-out sections
+    const cleanedContract = content
+      .replace(/\[[^\]]*(redact|محذوف|supprim|delete)[^\]]*\]/gi, '') // Remove [REDACTED], [محذوف], etc.
+      .replace(/\[.*?\]/g, '') // Remove any remaining bracketed text that might be redactions
+      .replace(/█+/g, '') // Remove black box characters
+      .replace(/▉+/g, '') // Remove other black block characters
+      .replace(/\*\*\*+/g, '') // Remove asterisks that might indicate redactions
+      .replace(/_{3,}/g, '') // Remove underscores that might indicate redactions
+      .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
+      .trim();
+    
+    return res.json({ contract: cleanedContract });
+  } catch (error) {
+    return res.status(500).json({ error: "Draft error", details: error.message });
+  }
+});
+
+// ── Voice Transcription (Groq primary → HF fallback) ────────────────────────
+app.post("/api/transcribe", express.json({ limit: "15mb" }), async (req, res) => {
+  try {
+    const groqKey = process.env.GROQ_API_KEY;
+    const hfKey   = process.env.HF_API_KEY;
+
+    const { audio, language, mimeType = "audio/webm" } = req.body;
+    if (!audio) return res.status(400).json({ error: "audio required" });
+
+    const buffer  = Buffer.from(audio, "base64");
+    const ext     = mimeType.includes("ogg") ? "ogg" : "webm";
+    const langCode = (language === "ar" || language === "dar") ? "ar" : language === "fr" ? "fr" : "en";
+
+    // Re-usable FormData factory (Blob can only be read once per fetch)
+    const makeForm = (model = "whisper-large-v3-turbo") => {
+      const blob = new Blob([buffer], { type: mimeType.split(";")[0] });
+      const fd = new FormData();
+      fd.append("file", blob, `audio.${ext}`);
+      fd.append("model", model);
+      fd.append("language", langCode);
+      fd.append("response_format", "json");
+      return fd;
+    };
+
+    // ── Primary: Groq (free tier, fastest Whisper available) ─────────────────
+    if (groqKey) {
+      try {
+        const r = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${groqKey}` },
+          body: makeForm("whisper-large-v3-turbo"),
+        });
+        if (r.ok) {
+          const d = await r.json();
+          return res.json({ transcript: (d.text || "").trim() });
+        }
+        console.error("[Transcribe] Groq error:", r.status, await r.text());
+      } catch (e) {
+        console.error("[Transcribe] Groq fetch error:", e.message);
+      }
+    }
+
+    // ── Fallback: HuggingFace Inference Router ────────────────────────────────
+    if (hfKey) {
+      try {
+        const r = await fetch(
+          "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3-turbo/v1/audio/transcriptions",
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${hfKey}` },
+            body: makeForm("openai/whisper-large-v3-turbo"),
+          }
+        );
+        if (r.ok) {
+          const d = await r.json();
+          return res.json({ transcript: (d.text || "").trim() });
+        }
+        const err = await r.text();
+        return res.status(502).json({ error: "Transcription failed", details: err });
+      } catch (e) {
+        return res.status(500).json({ error: "HF fetch error", details: e.message });
+      }
+    }
+
+    return res.status(500).json({
+      error: "GROQ_API_KEY manquant. Obtenez une clé gratuite sur console.groq.com et ajoutez-la dans .env",
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Transcription error", details: error.message });
   }
 });
 

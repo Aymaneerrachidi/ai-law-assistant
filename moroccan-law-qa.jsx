@@ -4,6 +4,8 @@ const API_URL = "http://localhost:8787/api/moroccan-law-qa";
 const ANALYZE_URL = "http://localhost:8787/api/analyze-document";
 const EXTRACT_URL = "http://localhost:8787/api/extract-with-llm";
 const EXPLAIN_URL = "http://localhost:8787/api/explain-concept";
+const DRAFT_URL      = "http://localhost:8787/api/draft-contract";
+const TRANSCRIBE_URL = "http://localhost:8787/api/transcribe";
 
 /* ─── Translations ─── */
 const UI = {
@@ -72,6 +74,57 @@ const UI = {
       complaint: "شكوى / مذكرة", inheritance: "وثيقة الإرث", general: "وثيقة قانونية عامة",
       court_report: "محضر / حكم قضائي", criminal_case: "قضية جنائية / جنحة",
     },
+    sentenceTab: "تقدير العقوبة",
+    sentenceTitle: "مُقدِّر العقوبة الجنائية",
+    sentenceDesc: "اختر نوع الجريمة والظروف للحصول على تقدير العقوبة المحتملة وفق القانون المغربي",
+    sentenceCrimeLabel: "نوع الجريمة",
+    sentenceAggLabel: "ظروف مشددة",
+    sentenceMitLabel: "ظروف مخففة",
+    sentenceBtn: "تقدير العقوبة",
+    sentenceBaseRange: "النطاق الأساسي",
+    sentenceAdjRange: "النطاق المعدَّل",
+    sentenceArticles: "المواد القانونية",
+    sentenceMultiplier: "معامل التعديل",
+    sentencePrison: "السجن",
+    sentenceFine: "الغرامة",
+    sentenceReset: "تقدير جديد",
+    sentenceCrimes: { sports_violence: "عنف الملاعب", theft: "سرقة بسيطة", aggravated_theft: "سرقة موصوفة", assault: "ضرب وجرح", assault_weapon: "اعتداء بأداة", rape: "اغتصاب / اعتداء جنسي", fraud: "نصب واحتيال", drug_possession: "حيازة مخدرات", drug_trafficking: "الاتجار بالمخدرات", trafficking: "الاتجار بالبشر", terrorism: "الإرهاب", bribery: "رشوة وفساد" },
+    sentenceAggFactors: { weapon_use: "استخدام السلاح", gang: "عصابة / إجرام منظم", multiple_victims: "ضحايا متعددون", repeat_offender: "سوابق جنائية", premeditated: "تخطيط مسبق", leader_role: "دور قائد/محرض", vulnerable_victim: "الضحية قاصر أو ضعيف" },
+    sentenceMitFactors: { first_offense: "لا سوابق", young_age: "سن صغير (أقل من 25)", cooperation: "تعاون مع الشرطة", remorse: "ندم حقيقي", restitution: "تعويض الضحية" },
+    deadlineTab: "المواعيد القانونية",
+    deadlineTitle: "حاسبة المواعيد القانونية",
+    deadlineDesc: "أدخل تاريخ الحدث ونوع القضية لحساب جميع المواعيد القانونية اللاحقة",
+    deadlineDateLabel: "تاريخ الحدث",
+    deadlineCaseLabel: "نوع القضية",
+    deadlineBtn: "احسب المواعيد",
+    deadlineNext: "الموعد القادم",
+    deadlineDaysLeft: "يوم متبق",
+    deadlineUrgent: "عاجل",
+    deadlinePassed: "مضى",
+    deadlineReset: "حساب جديد",
+    deadlineStatute: "المرجع القانوني",
+    deadlineCases: { criminal_appeal: "استئناف جنائي", cassation: "طعن بالنقض", divorce: "طلاق", custody: "حضانة", inheritance: "تركة / إرث", civil_case: "دعوى مدنية", rental_dispute: "نزاع الكراء" },
+    deadlineSteps: { fileAppeal: "تقديم طعن", hearing: "جلسة الاستئناف", decision: "صدور القرار", fileCassation: "تقديم طعن بالنقض", review: "مراجعة محكمة النقض", judgment: "صدور الحكم النهائي", summons: "استدعاء الطرف الآخر", reconciliation: "محاولة الإصلاح", register: "تسجيل لدى الحالة المدنية", deliberation: "مداولة القاضي", registerDeath: "تسجيل رسم الوفاة", fileClaim: "تقديم مطالبة الإرث", distribution: "توزيع التركة", notice: "إشعار الإخلاء", execute: "تنفيذ الحكم" },
+    contractTab: "صياغة العقود",
+    contractTitle: "مُولِّد العقود القانونية",
+    contractDesc: "أدخل بيانات العقد واحصل على مسودة قانونية جاهزة مستندة إلى القانون المغربي",
+    contractTypeLabel: "نوع العقد",
+    contractTypes: { marriage: "عقد الزواج", lease: "عقد الكراء", sale: "عقد البيع" },
+    contractBtn: "أنشئ العقد",
+    contractGenerating: "جاري صياغة العقد...",
+    contractCopy: "نسخ العقد",
+    contractReset: "عقد جديد",
+    contractDisclaimer: "هذه المسودة تحتاج مراجعة محامٍ قبل الاستخدام الرسمي.",
+    voiceListen: "انقر للتحدث",
+    voiceStop: "إيقاف",
+    voicePermissionDenied: "يجب السماح بالوصول إلى الميكروفون من إعدادات المتصفح",
+    voiceNoSpeech: "لم يتم رصد أي كلام، جرب مرة أخرى",
+    voiceNetwork: "خطأ في الشبكة — تأكد من اتصال الإنترنت",
+    voiceAudioCapture: "تعذر الوصول إلى الميكروفون — تأكد أنه غير مستخدم من تطبيق آخر",
+    voiceErrorMsg: "خطأ في التعرف على الصوت، جرب مرة أخرى",
+    voiceTranscribing: "جاري تحويل الصوت...",
+    voiceTapToStop: "انقر للتوقف",
+    followUpTitle: "أسئلة متعلقة",
   },
   fr: {
     title: "Assistant Juridique",
@@ -138,6 +191,57 @@ const UI = {
       complaint: "Plainte / Mémoire", inheritance: "Acte de succession", general: "Document juridique général",
       court_report: "Procès-verbal / Jugement", criminal_case: "Affaire pénale / Correctionnelle",
     },
+    sentenceTab: "Estimation de peine",
+    sentenceTitle: "Estimateur de Peine Pénale",
+    sentenceDesc: "Choisissez le type d'infraction et les circonstances pour estimer la peine selon le droit marocain",
+    sentenceCrimeLabel: "Type d'infraction",
+    sentenceAggLabel: "Circonstances aggravantes",
+    sentenceMitLabel: "Circonstances atténuantes",
+    sentenceBtn: "Estimer la peine",
+    sentenceBaseRange: "Fourchette de base",
+    sentenceAdjRange: "Fourchette ajustée",
+    sentenceArticles: "Articles de loi",
+    sentenceMultiplier: "Coefficient d'ajustement",
+    sentencePrison: "Prison",
+    sentenceFine: "Amende",
+    sentenceReset: "Nouvelle estimation",
+    sentenceCrimes: { sports_violence: "Violence dans les stades", theft: "Vol simple", aggravated_theft: "Vol aggravé", assault: "Coups et blessures", assault_weapon: "Agression avec arme", rape: "Viol / Agression sexuelle", fraud: "Escroquerie", drug_possession: "Possession de stupéfiants", drug_trafficking: "Trafic de stupéfiants", trafficking: "Traite d'êtres humains", terrorism: "Terrorisme", bribery: "Corruption" },
+    sentenceAggFactors: { weapon_use: "Utilisation d'une arme", gang: "Gang / Crime organisé", multiple_victims: "Victimes multiples", repeat_offender: "Récidive", premeditated: "Préméditation", leader_role: "Rôle de meneur", vulnerable_victim: "Victime vulnérable" },
+    sentenceMitFactors: { first_offense: "Casier vierge", young_age: "Jeune âge (< 25 ans)", cooperation: "Coopération avec la police", remorse: "Remords sincère", restitution: "Dédommagement de la victime" },
+    deadlineTab: "Délais légaux",
+    deadlineTitle: "Calculateur de Délais Légaux",
+    deadlineDesc: "Entrez la date de l'événement et le type d'affaire pour calculer tous les délais légaux",
+    deadlineDateLabel: "Date de l'événement",
+    deadlineCaseLabel: "Type d'affaire",
+    deadlineBtn: "Calculer les délais",
+    deadlineNext: "Prochain délai",
+    deadlineDaysLeft: "jours restants",
+    deadlineUrgent: "Urgent",
+    deadlinePassed: "Dépassé",
+    deadlineReset: "Nouveau calcul",
+    deadlineStatute: "Référence légale",
+    deadlineCases: { criminal_appeal: "Appel pénal", cassation: "Pourvoi en cassation", divorce: "Divorce", custody: "Garde d'enfant", inheritance: "Succession", civil_case: "Affaire civile", rental_dispute: "Litige locatif" },
+    deadlineSteps: { fileAppeal: "Dépôt de l'appel", hearing: "Audience d'appel", decision: "Rendu de décision", fileCassation: "Dépôt du pourvoi", review: "Examen par la Cour", judgment: "Arrêt définitif", summons: "Convocation de l'autre partie", reconciliation: "Tentative de réconciliation", register: "Enregistrement à l'état civil", deliberation: "Délibération du juge", registerDeath: "Enregistrement du décès", fileClaim: "Demande de succession", distribution: "Partage de succession", notice: "Préavis d'expulsion", execute: "Exécution du jugement" },
+    contractTab: "Rédaction de contrats",
+    contractTitle: "Générateur de Contrats Juridiques",
+    contractDesc: "Saisissez les données du contrat et obtenez un projet juridique basé sur le droit marocain",
+    contractTypeLabel: "Type de contrat",
+    contractTypes: { marriage: "Contrat de mariage", lease: "Contrat de bail", sale: "Contrat de vente" },
+    contractBtn: "Générer le contrat",
+    contractGenerating: "Rédaction en cours...",
+    contractCopy: "Copier le contrat",
+    contractReset: "Nouveau contrat",
+    contractDisclaimer: "Ce projet nécessite la révision d'un avocat avant toute utilisation officielle.",
+    voiceListen: "Parlez maintenant",
+    voiceStop: "Arrêter",
+    voicePermissionDenied: "Autorisez l'accès au microphone dans les paramètres du navigateur",
+    voiceNoSpeech: "Aucune parole détectée, réessayez",
+    voiceNetwork: "Erreur réseau — vérifiez votre connexion Internet",
+    voiceAudioCapture: "Microphone inaccessible — vérifiez qu'il n'est pas utilisé par une autre application",
+    voiceErrorMsg: "Erreur de reconnaissance vocale, réessayez",
+    voiceTranscribing: "Transcription en cours...",
+    voiceTapToStop: "Cliquez pour arrêter",
+    followUpTitle: "Questions connexes",
   },
   en: {
     title: "Legal Assistant",
@@ -204,6 +308,174 @@ const UI = {
       complaint: "Complaint / Brief", inheritance: "Inheritance document", general: "General legal document",
       court_report: "Court Report / Judgment", criminal_case: "Criminal / Misdemeanor Case",
     },
+    sentenceTab: "Sentence Estimator",
+    sentenceTitle: "Criminal Sentence Estimator",
+    sentenceDesc: "Select the offense type and circumstances to estimate the likely sentence under Moroccan law",
+    sentenceCrimeLabel: "Offense type",
+    sentenceAggLabel: "Aggravating factors",
+    sentenceMitLabel: "Mitigating factors",
+    sentenceBtn: "Estimate sentence",
+    sentenceBaseRange: "Base range",
+    sentenceAdjRange: "Adjusted range",
+    sentenceArticles: "Legal articles",
+    sentenceMultiplier: "Adjustment factor",
+    sentencePrison: "Prison",
+    sentenceFine: "Fine",
+    sentenceReset: "New estimate",
+    sentenceCrimes: { sports_violence: "Sports violence / Rioting", theft: "Simple theft", aggravated_theft: "Aggravated theft", assault: "Assault & Battery", assault_weapon: "Assault with weapon", rape: "Rape / Sexual assault", fraud: "Fraud / Swindling", drug_possession: "Drug possession", drug_trafficking: "Drug trafficking", trafficking: "Human trafficking", terrorism: "Terrorism", bribery: "Bribery / Corruption" },
+    sentenceAggFactors: { weapon_use: "Weapon use", gang: "Gang / Organized crime", multiple_victims: "Multiple victims", repeat_offender: "Prior convictions", premeditated: "Premeditation", leader_role: "Leader / instigator role", vulnerable_victim: "Vulnerable victim (minor)" },
+    sentenceMitFactors: { first_offense: "No prior record", young_age: "Young age (under 25)", cooperation: "Cooperated with police", remorse: "Genuine remorse", restitution: "Compensated victim" },
+    deadlineTab: "Legal Deadlines",
+    deadlineTitle: "Legal Deadline Calculator",
+    deadlineDesc: "Enter the event date and case type to calculate all subsequent legal deadlines",
+    deadlineDateLabel: "Event date",
+    deadlineCaseLabel: "Case type",
+    deadlineBtn: "Calculate deadlines",
+    deadlineNext: "Next deadline",
+    deadlineDaysLeft: "days remaining",
+    deadlineUrgent: "Urgent",
+    deadlinePassed: "Passed",
+    deadlineReset: "New calculation",
+    deadlineStatute: "Legal reference",
+    deadlineCases: { criminal_appeal: "Criminal appeal", cassation: "Cassation appeal", divorce: "Divorce", custody: "Child custody", inheritance: "Inheritance / Estate", civil_case: "Civil case", rental_dispute: "Rental dispute" },
+    deadlineSteps: { fileAppeal: "File appeal", hearing: "Appeal hearing", decision: "Decision issued", fileCassation: "File cassation", review: "Court review", judgment: "Final judgment", summons: "Summon other party", reconciliation: "Reconciliation attempt", register: "Register with civil status", deliberation: "Judge deliberation", registerDeath: "Register death certificate", fileClaim: "File inheritance claim", distribution: "Estate distribution", notice: "Eviction notice", execute: "Execute judgment" },
+    contractTab: "Contract Drafting",
+    contractTitle: "Legal Contract Generator",
+    contractDesc: "Enter the contract details and get a ready-to-review legal draft based on Moroccan law",
+    contractTypeLabel: "Contract type",
+    contractTypes: { marriage: "Marriage contract", lease: "Lease agreement", sale: "Sale contract" },
+    contractBtn: "Generate contract",
+    contractGenerating: "Drafting contract...",
+    contractCopy: "Copy contract",
+    contractReset: "New contract",
+    contractDisclaimer: "This draft requires attorney review before official use.",
+    voiceListen: "Click to speak",
+    voiceStop: "Stop",
+    voicePermissionDenied: "Allow microphone access in browser settings",
+    voiceNoSpeech: "No speech detected, please try again",
+    voiceNetwork: "Network error — check your internet connection",
+    voiceAudioCapture: "Microphone unavailable — check it's not used by another app",
+    voiceErrorMsg: "Speech recognition error, please try again",
+    voiceTranscribing: "Transcribing audio...",
+    voiceTapToStop: "Click to stop",
+    followUpTitle: "Related questions",
+  },
+  dar: {
+    title: "المساعد القانوني",
+    brand: "القانون المغربي",
+    subtitle: "سقسي سؤالك القانوني وتجيب جواب واضح من القانون المغربي",
+    placeholder: "كتب سؤالك هنا...",
+    send: "بعث",
+    thinking: "راه كنشتغل...",
+    disclaimer: "هاد المعلومات للتوعية القانونية فقط — خاصك تستشير محامي متخصص.",
+    quickTitle: "اختار سؤال تبدأ بيه",
+    domainsTitle: "التخصصات",
+    chatTab: "المحادثة",
+    docTab: "تحليل الوثائق",
+    learnTab: "تعلم القانون",
+    learnTitle: "فهم المفاهيم القانونية",
+    learnDesc: "اختار مفهوم قانوني وتجيب شرح مبسط بأمثلة مغربية",
+    learnProfile: "ملفك",
+    learnLevelLabel: "مستوى الفهم",
+    learnStyleLabel: "أسلوب الشرح",
+    learnBgLabel: "خلفيتك",
+    learnBtnLabel: "شرح ليا هاد المفهوم",
+    learnCustomLabel: "أو كتب مفهوم آخر",
+    learnCustomPlaceholder: "مثال: عقد الشركة، دعوى مدنية...",
+    learnReset: "شرح مفهوم جديد",
+    learnExplaining: "راه كنهيئ الشرح...",
+    learnLevels: { beginner: "مبتدئ", intermediate: "متوسط", advanced: "متقدم" },
+    learnStyles: { simple: "بسيط بزاف", detailed: "مع التفاصيل", technical: "تقني" },
+    learnBgs: { nonlawyer: "ماشي متخصص", business: "صاحب خدمة", student: "طالب", parent: "ولي أمر" },
+    learnConceptsTitle: "مفاهيم مشهورة",
+    uploadTitle: "تحليل الوثائق القانونية",
+    uploadDesc: "رفع وثيقة قانونية (PDF أو صورة) وتجيب تحليل قانوني",
+    dropHint: "جر الملف هنا أو نقر للاختيار",
+    supported: "PDF · JPG · PNG",
+    extracting: "راه كنستخرج النص...",
+    analyzing: "راه كنحلل قانونياً...",
+    extractedTitle: "النص المستخرج",
+    analysisTitle: "التحليل القانوني",
+    reset: "تحليل وثيقة جديدة",
+    ocrError: "ما قدرش يستخرج النص من الصورة",
+    pdfError: "ما قدرش يقرأ ملف PDF",
+    analyzeError: "التحليل ما خدمش",
+    noText: "ما استخرجش أي نص من الوثيقة",
+    copy: "نسخ",
+    copied: "نسخ تمام ✓",
+    exportPdf: "تصدير PDF",
+    clearChat: "مسح المحادثة",
+    intelligenceTitle: "تحليل ذكي",
+    docTypeLabel: "نوع الوثيقة",
+    entitiesTitle: "العناصر المستخرجة",
+    risksTitle: "المخاطر القانونية",
+    datesLabel: "التواريخ",
+    amountsLabel: "المبالغ",
+    articlesLabel: "المواد القانونية",
+    partiesLabel: "الأطراف",
+    noRisks: "ما رصدناش مخاطر واضحة",
+    caseNumberLabel: "رقم الملف",
+    judgeLabel: "القاضي",
+    defendantLabel: "المتهم",
+    chargesLabel: "التهم",
+    verdictLabel: "منطوق الحكم",
+    docTypes: {
+      marriage: "عقد الزواج", divorce: "وثيقة الطلاق", custody: "وثيقة الحضانة",
+      will: "الوصية", lease: "عقد الكراء", purchase: "عقد البيع",
+      complaint: "شكوى / مذكرة", inheritance: "وثيقة الإرث", general: "وثيقة قانونية عامة",
+      court_report: "محضر / حكم", criminal_case: "قضية جنحة / جناية",
+    },
+    sentenceTab: "تقدير العقوبة",
+    sentenceTitle: "المقدِّر ديال العقوبة",
+    sentenceDesc: "اختار نوع الجريمة والظروف وتجيب تقدير العقوبة حسب القانون المغربي",
+    sentenceCrimeLabel: "نوع الجريمة",
+    sentenceAggLabel: "الظروف المشددة",
+    sentenceMitLabel: "الظروف المخففة",
+    sentenceBtn: "قدر العقوبة",
+    sentenceBaseRange: "النطاق الأساسي",
+    sentenceAdjRange: "النطاق المعدَّل",
+    sentenceArticles: "المواد القانونية",
+    sentenceMultiplier: "معامل التعديل",
+    sentencePrison: "السجن",
+    sentenceFine: "التغريمة",
+    sentenceReset: "تقدير جديد",
+    sentenceCrimes: { sports_violence: "الشغب ديال الملاعب", theft: "سرقة بسيطة", aggravated_theft: "سرقة موصوفة", assault: "الضرب والجرح", assault_weapon: "اعتداء بسلاح", rape: "اغتصاب / اعتداء جنسي", fraud: "النصب والاحتيال", drug_possession: "حيازة المخدرات", drug_trafficking: "بيع المخدرات", trafficking: "الاتجار بالبشر", terrorism: "الإرهاب", bribery: "الرشوة والفساد" },
+    sentenceAggFactors: { weapon_use: "استعمال سلاح", gang: "عصابة / تنظيم إجرامي", multiple_victims: "ضحايا متعددين", repeat_offender: "سوابق جنائية", premeditated: "تخطيط مسبق", leader_role: "دور القائد / المحرض", vulnerable_victim: "الضحية قاصر أو ضعيف" },
+    sentenceMitFactors: { first_offense: "بلا سوابق", young_age: "السن صغير (أقل من 25)", cooperation: "تعاون مع البوليس", remorse: "ندم حقيقي", restitution: "تعويض الضحية" },
+    deadlineTab: "المواعيد القانونية",
+    deadlineTitle: "حاسبة المواعيد القانونية",
+    deadlineDesc: "دخل تاريخ الحدث ونوع القضية وتجيب جميع المواعيد القانونية",
+    deadlineDateLabel: "تاريخ الحدث",
+    deadlineCaseLabel: "نوع القضية",
+    deadlineBtn: "احسب المواعيد",
+    deadlineNext: "الموعد الجاي",
+    deadlineDaysLeft: "يوم باقي",
+    deadlineUrgent: "عاجل",
+    deadlinePassed: "فات وقتو",
+    deadlineReset: "حساب جديد",
+    deadlineStatute: "المرجع القانوني",
+    deadlineCases: { criminal_appeal: "استئناف جنائي", cassation: "طعن بالنقض", divorce: "الطلاق", custody: "الحضانة", inheritance: "التركة / الإرث", civil_case: "دعوى مدنية", rental_dispute: "نزاع الكراء" },
+    deadlineSteps: { fileAppeal: "تقديم الطعن", hearing: "جلسة الاستئناف", decision: "صدور القرار", fileCassation: "تقديم طعن بالنقض", review: "مراجعة محكمة النقض", judgment: "الحكم النهائي", summons: "استدعاء الطرف الآخر", reconciliation: "محاولة الإصلاح", register: "تسجيل الحالة المدنية", deliberation: "مداولة القاضي", registerDeath: "تسجيل شهادة الوفاة", fileClaim: "تقديم مطالبة الإرث", distribution: "توزيع التركة", notice: "إشعار الإخلاء", execute: "تنفيذ الحكم" },
+    contractTab: "صياغة العقود",
+    contractTitle: "مولد العقود القانونية",
+    contractDesc: "دخل بيانات العقد وتجيب مسودة قانونية حسب القانون المغربي",
+    contractTypeLabel: "نوع العقد",
+    contractTypes: { marriage: "عقد الزواج", lease: "عقد الكراء", sale: "عقد البيع" },
+    contractBtn: "أنشئ العقد",
+    contractGenerating: "راه كنصيغ العقد...",
+    contractCopy: "نسخ العقد",
+    contractReset: "عقد جديد",
+    contractDisclaimer: "هاد المسودة خاصها مراجعة محامي قبل الاستخدام الرسمي.",
+    voiceListen: "نقر باش تتكلم",
+    voiceStop: "قف",
+    voicePermissionDenied: "خاصك تسمح للمتصفح يوصل للميكروفون",
+    voiceNoSpeech: "ما سمعناش أي كلام، جرب مرة أخرى",
+    voiceNetwork: "مشكلة في النيت — تحقق من الاتصال",
+    voiceAudioCapture: "ما قدرش يوصل للميكروفون — تحقق أنه ماشي مستعمل",
+    voiceErrorMsg: "مشكلة في التعرف على الصوت، جرب مرة أخرى",
+    voiceTranscribing: "راه كيترجم الصوت...",
+    voiceTapToStop: "نقر باش تقف",
+    followUpTitle: "أسئلة مرتبطة",
   },
 };
 
@@ -232,6 +504,14 @@ const quickQuestions = {
     "What are the conditions for a lease?",
     "What are custody rights after divorce?",
   ],
+  dar: [
+    "شنو السن القانوني للزواج فالمغرب؟",
+    "كيفاش كتمشي إجراءات الطلاق؟",
+    "شنو عقوبة السرقة فالقانون المغربي؟",
+    "كيفاش كيتقسم الإرث؟",
+    "شنو شروط عقد الكراء؟",
+    "شنو حقوق الحضانة بعد الطلاق؟",
+  ],
 };
 
 const legalDomains = {
@@ -252,6 +532,12 @@ const legalDomains = {
     { title: "Penal Code", desc: "Offenses · Penalties · Procedures" },
     { title: "Criminal Procedure", desc: "Investigation · Trial · Appeals" },
     { title: "Obligations & Contracts", desc: "Contracts · Leases · Damages" },
+  ],
+  dar: [
+    { title: "مدونة الأسرة", desc: "الزواج · الطلاق · الحضانة · الإرث" },
+    { title: "القانون الجنائي", desc: "الجرائم · العقوبات · الإجراءات" },
+    { title: "المسطرة الجنائية", desc: "التحقيق · المحاكمة · الطعون" },
+    { title: "الالتزامات والعقود", desc: "العقود · الكراء · التعويضات" },
   ],
 };
 
@@ -299,6 +585,20 @@ const learnConcepts = {
     { id: "power_of_attorney",   label: "Power of Attorney",      sub: "Art. 879+ DOC — delegating legal authority" },
     { id: "garde_a_vue",         label: "Police Custody / Detention",sub: "Arts. 114–115 CCP — 24h, renewable up to 96h" },
   ],
+  dar: [
+    { id: "limitation",          label: "التقادم",                sub: "م. 50 م.ج — 10 سنين (جناية) · 3 سنين (جنحة)" },
+    { id: "custody",             label: "الحضانة",                sub: "م. 163–171 مدونة الأسرة — الأم أولاً" },
+    { id: "mahr",                label: "الصداق / المهر",         sub: "م. 26–29 مدونة الأسرة — حق المرأة وحدها" },
+    { id: "alimony",             label: "النفقة",                 sub: "م. 168–190 مدونة الأسرة — كتشمل السكن والتعليم" },
+    { id: "inheritance",         label: "الإرث والتركة",          sub: "م. 276–332 مدونة الأسرة — أحكام مالكية" },
+    { id: "lease",               label: "عقد الكراء",             sub: "م. 505 ق.م · ق. 67-12 — حماية المكتري" },
+    { id: "presumption",         label: "قرينة البراءة",          sub: "م. 87 الدستور — أساس التقاضي الجنائي" },
+    { id: "divorce",             label: "الطلاق والتطليق",        sub: "م. 77–94 مدونة الأسرة — 3 أنواع" },
+    { id: "force_majeure",       label: "القوة القاهرة",          sub: "م. 264 ق.ع — إعفاء من المسؤولية التعاقدية" },
+    { id: "sports_violence",     label: "الشغب ديال الملاعب",     sub: "م. 306-1 إلى 306-4 ق.ج — سجن وغرامة" },
+    { id: "power_of_attorney",   label: "الوكالة القانونية",      sub: "م. 879+ ق.ع — التفويض بالتصرف القانوني" },
+    { id: "garde_a_vue",         label: "التوقيف للنظر",          sub: "م. 114–115 م.ج — 24 ساعة قابلة للتمديد" },
+  ],
 };
 
 /* ─── CSS keyframes ─── */
@@ -345,6 +645,36 @@ const E = "cubic-bezier(0.4,0,0.2,1)";
 const F = '"Josefin Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
 const FA = '"Cairo",-apple-system,BlinkMacSystemFont,sans-serif';
 
+/* ─── Contract Field Definitions ─── */
+const CONTRACT_FIELDS = {
+  marriage: [
+    { id: "groom",      label: { ar: "اسم العريس",       dar: "اسم العريس",       fr: "Nom du marié",        en: "Groom name" },          type: "text" },
+    { id: "bride",      label: { ar: "اسم العروس",        dar: "اسم العروس",        fr: "Nom de la mariée",    en: "Bride name" },          type: "text" },
+    { id: "mahr",       label: { ar: "مبلغ الصداق (DH)", dar: "مبلغ الصداق (درهم)", fr: "Montant du sadaq",    en: "Mahr amount (DH)" },    type: "number" },
+    { id: "witness1",   label: { ar: "الشاهد الأول",      dar: "الشاهد الأول",      fr: "Témoin 1",            en: "Witness 1" },           type: "text" },
+    { id: "witness2",   label: { ar: "الشاهد الثاني",     dar: "الشاهد الثاني",     fr: "Témoin 2",            en: "Witness 2" },           type: "text" },
+    { id: "date",       label: { ar: "تاريخ الزواج",      dar: "تاريخ الزواج",      fr: "Date du mariage",     en: "Marriage date" },       type: "date" },
+    { id: "conditions", label: { ar: "شروط خاصة",         dar: "شروط خاصة",         fr: "Conditions spéciales",en: "Special conditions" }, type: "textarea" },
+  ],
+  lease: [
+    { id: "landlord",  label: { ar: "اسم المكري",         dar: "اسم المكري",         fr: "Nom du bailleur",     en: "Landlord name" },       type: "text" },
+    { id: "tenant",    label: { ar: "اسم المكتري",        dar: "اسم المكتري",        fr: "Nom du locataire",    en: "Tenant name" },         type: "text" },
+    { id: "address",   label: { ar: "عنوان العقار",       dar: "عنوان العقار",       fr: "Adresse du bien",     en: "Property address" },    type: "textarea" },
+    { id: "rent",      label: { ar: "الكراء الشهري (DH)", dar: "الكراء الشهري (درهم)", fr: "Loyer mensuel (DH)",  en: "Monthly rent (DH)" },   type: "number" },
+    { id: "duration",  label: { ar: "مدة العقد (أشهر)",  dar: "مدة العقد (شهر)",  fr: "Durée (mois)",        en: "Duration (months)" },   type: "number" },
+    { id: "deposit",   label: { ar: "التأمين (DH)",       dar: "التأمين (درهم)",       fr: "Dépôt de garantie",   en: "Deposit (DH)" },        type: "number" },
+    { id: "startDate", label: { ar: "تاريخ البداية",      dar: "تاريخ البداية",      fr: "Date de début",       en: "Start date" },          type: "date" },
+  ],
+  sale: [
+    { id: "seller",   label: { ar: "اسم البائع",          dar: "اسم البائع",          fr: "Nom du vendeur",      en: "Seller name" },         type: "text" },
+    { id: "buyer",    label: { ar: "اسم المشتري",         dar: "اسم المشتري",         fr: "Nom de l'acheteur",   en: "Buyer name" },          type: "text" },
+    { id: "item",     label: { ar: "وصف المبيع",          dar: "وصف المبيع",          fr: "Description du bien", en: "Item description" },    type: "textarea" },
+    { id: "price",    label: { ar: "الثمن (DH)",          dar: "الثمن (درهم)",          fr: "Prix (DH)",           en: "Price (DH)" },          type: "number" },
+    { id: "payment",  label: { ar: "طريقة الأداء",        dar: "طريقة الأداء",        fr: "Mode de paiement",    en: "Payment method" },      type: "text" },
+    { id: "delivery", label: { ar: "تاريخ التسليم",       dar: "تاريخ التسليم",       fr: "Date de livraison",   en: "Delivery date" },       type: "date" },
+  ],
+};
+
 export default function MoroccanLawQA() {
   const [language, setLanguage] = useState("ar");
   const [messages, setMessages] = useState([]);
@@ -366,10 +696,32 @@ export default function MoroccanLawQA() {
   const [learnBg, setLearnBg] = useState("nonlawyer");
   const [learnResult, setLearnResult] = useState("");
   const [learnLoading, setLearnLoading] = useState(false);
+  // Voice input
+  const [isListening, setIsListening] = useState(false);
+  const [voiceTranscribing, setVoiceTranscribing] = useState(false);
+  const [voiceError, setVoiceError] = useState("");
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  // Follow-up suggestions
+  const [followUps, setFollowUps] = useState([]);
+  // Sentence estimator
+  const [sentenceCrime, setSentenceCrime] = useState("");
+  const [sentenceAgg, setSentenceAgg] = useState([]);
+  const [sentenceMit, setSentenceMit] = useState([]);
+  const [sentenceResult, setSentenceResult] = useState(null);
+  // Deadline calculator
+  const [deadlineDate, setDeadlineDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [deadlineCaseType, setDeadlineCaseType] = useState("");
+  const [deadlineResult, setDeadlineResult] = useState(null);
+  // Contract drafting
+  const [contractType, setContractType] = useState("marriage");
+  const [contractParams, setContractParams] = useState({});
+  const [contractResult, setContractResult] = useState("");
+  const [contractLoading, setContractLoading] = useState(false);
   const endRef = useRef(null);
   const fileRef = useRef(null);
 
-  const rtl = language === "ar";
+  const rtl = language === "ar" || language === "dar";
   const t = UI[language];
   const ff = rtl ? FA : F;
 
@@ -389,6 +741,7 @@ export default function MoroccanLawQA() {
   async function send(text) {
     const c = (text || input).trim();
     if (!c || loading) return;
+    setFollowUps([]);
     setInput("");
     const userMsg = { role: "user", content: c };
     const next = [...messages, userMsg];
@@ -401,7 +754,22 @@ export default function MoroccanLawQA() {
         body: JSON.stringify({ messages: next, language }),
       });
       const d = await res.json();
-      setMessages((p) => [...p, { role: "assistant", content: d.content || "No response received." }]);
+      const reply = d.content || "No response received.";
+      setMessages((p) => [...p, { role: "assistant", content: reply }]);
+      // Generate follow-up suggestions in background
+      fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: `Suggest exactly 3 short follow-up questions a user might ask next, as a JSON array of strings only, no explanation. User asked: "${c}". Language: ${language}.` }],
+          language,
+        }),
+      }).then(r => r.json()).then(d2 => {
+        try {
+          const m = (d2.content || "").match(/\[[\s\S]*?\]/);
+          if (m) { const arr = JSON.parse(m[0]); if (Array.isArray(arr) && arr.length) setFollowUps(arr.slice(0, 3)); }
+        } catch {}
+      }).catch(() => {});
     } catch {
       setMessages((p) => [...p, { role: "assistant", content: "Connection error. Please try again." }]);
     } finally {
@@ -439,9 +807,144 @@ export default function MoroccanLawQA() {
     }
   }
 
+  /* ── Voice Input (MediaRecorder + Groq Whisper) ── */
+  function startVoice() {
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    setVoiceError("");
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((stream) => {
+        audioChunksRef.current = [];
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : "audio/ogg";
+        const recorder = new MediaRecorder(stream, { mimeType });
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+        recorder.onstop = () => {
+          stream.getTracks().forEach((tr) => tr.stop());
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64 = reader.result.split(",")[1];
+            setVoiceTranscribing(true);
+            try {
+              const res = await fetch(TRANSCRIBE_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ audio: base64, language, mimeType: mimeType.split(";")[0] }),
+              });
+              const d = await res.json();
+              if (!res.ok) throw new Error(d.error || "Transcription failed");
+              if (d.transcript) setInput((prev) => prev ? prev + " " + d.transcript : d.transcript);
+            } catch (err) {
+              setVoiceError(err.message);
+            } finally {
+              setVoiceTranscribing(false);
+            }
+          };
+          reader.readAsDataURL(blob);
+        };
+        mediaRecorderRef.current = recorder;
+        recorder.start();
+        setIsListening(true);
+      })
+      .catch(() => setVoiceError(t.voicePermissionDenied));
+  }
+  function stopVoice() {
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.stop();
+    }
+    setIsListening(false);
+  }
+
+  /* ── Sentence Range Estimator ── */
+  function estimateSentence() {
+    const BASE = {
+      sports_violence:  { articles: "306-1 à 306-4",    minM: 6,   maxM: 24,  minF: 5000,   maxF: 20000 },
+      theft:            { articles: "467-468",           minM: 1,   maxM: 24,  minF: 100,    maxF: 2000 },
+      aggravated_theft: { articles: "468-469",           minM: 24,  maxM: 120, minF: 200,    maxF: 5000 },
+      assault:          { articles: "393-395",           minM: 1,   maxM: 36,  minF: 200,    maxF: 10000 },
+      assault_weapon:   { articles: "398",               minM: 36,  maxM: 72,  minF: 1000,   maxF: 20000 },
+      rape:             { articles: "475-476",           minM: 60,  maxM: 360, minF: 5000,   maxF: 50000 },
+      fraud:            { articles: "450, 234-235",      minM: 6,   maxM: 36,  minF: 250,    maxF: 5000 },
+      drug_possession:  { articles: "209",               minM: 1,   maxM: 12,  minF: 500,    maxF: 5000 },
+      drug_trafficking: { articles: "210-212",           minM: 24,  maxM: 240, minF: 5000,   maxF: 1000000 },
+      trafficking:      { articles: "448-10 à 448-14",  minM: 12,  maxM: 60,  minF: 5000,   maxF: 50000 },
+      terrorism:        { articles: "218-1 à 218-5",    minM: 120, maxM: 360, minF: 50000,  maxF: 500000 },
+      bribery:          { articles: "248-250",           minM: 60,  maxM: 120, minF: 10000,  maxF: 100000 },
+    };
+    const AGG = { weapon_use: 2.0, gang: 1.5, multiple_victims: 1.75, repeat_offender: 1.5, premeditated: 2.0, leader_role: 1.75, vulnerable_victim: 2.0 };
+    const MIT = { first_offense: 0.5, young_age: 0.65, cooperation: 0.7, remorse: 0.75, restitution: 0.8 };
+    const b = BASE[sentenceCrime];
+    if (!b) return;
+    let sm = 1, fm = 1;
+    sentenceAgg.forEach(k => { if (AGG[k]) { sm *= AGG[k]; fm *= AGG[k]; } });
+    sentenceMit.forEach(k => { if (MIT[k]) { sm *= MIT[k]; fm *= MIT[k]; } });
+    sm = Math.max(0.3, Math.min(3, sm));
+    fm = Math.max(0.3, Math.min(3, fm));
+    const yr = (language === "ar" || language === "dar") ? "سنوات" : language === "fr" ? "ans" : "years";
+    const mo = (language === "ar" || language === "dar") ? "أشهر" : language === "fr" ? "mois" : "months";
+    const fmt = (n) => n >= 12 ? `${Math.round(n / 12)} ${yr}` : `${Math.round(n)} ${mo}`;
+    setSentenceResult({
+      articles: b.articles,
+      base: { prison: `${fmt(b.minM)} – ${fmt(b.maxM)}`, fine: `${b.minF.toLocaleString()}–${b.maxF.toLocaleString()} DH` },
+      adjusted: { prison: `${fmt(b.minM * sm)} – ${fmt(b.maxM * sm)}`, fine: `${Math.round(b.minF * fm).toLocaleString()}–${Math.round(b.maxF * fm).toLocaleString()} DH` },
+      multiplier: sm.toFixed(2),
+      aggApplied: [...sentenceAgg],
+      mitApplied: [...sentenceMit],
+    });
+  }
+
+  /* ── Legal Deadline Calculator ── */
+  function calcDeadlines() {
+    const CASES = {
+      criminal_appeal: { steps: [{ days: 10, key: "fileAppeal" }, { days: 90, key: "hearing" }, { days: 30, key: "decision" }], statute: "CPP Art. 415" },
+      cassation:       { steps: [{ days: 10, key: "fileCassation" }, { days: 180, key: "review" }, { days: 30, key: "judgment" }], statute: "CPP Art. 427" },
+      divorce:         { steps: [{ days: 30, key: "summons" }, { days: 14, key: "reconciliation" }, { days: 10, key: "register" }], statute: "Moudawana Art. 82" },
+      custody:         { steps: [{ days: 30, key: "hearing" }, { days: 30, key: "deliberation" }, { days: 10, key: "register" }], statute: "Moudawana Art. 166" },
+      inheritance:     { steps: [{ days: 15, key: "registerDeath" }, { days: 90, key: "fileClaim" }, { days: 180, key: "distribution" }], statute: "Moudawana Art. 276" },
+      civil_case:      { steps: [{ days: 30, key: "summons" }, { days: 60, key: "hearing" }, { days: 180, key: "judgment" }], statute: "CPC" },
+      rental_dispute:  { steps: [{ days: 30, key: "notice" }, { days: 30, key: "hearing" }, { days: 15, key: "execute" }], statute: "Loi 67-12" },
+    };
+    const c = CASES[deadlineCaseType];
+    if (!c) return;
+    const today = new Date();
+    let cur = new Date(deadlineDate);
+    const locale = (language === "ar" || language === "dar") ? "ar-MA" : language === "fr" ? "fr-FR" : "en-GB";
+    const steps = c.steps.map((s, i) => {
+      cur = new Date(cur);
+      cur.setDate(cur.getDate() + s.days);
+      const diff = Math.ceil((cur - today) / 86400000);
+      return { step: i + 1, dayKey: s.key, days: s.days, date: cur.toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" }), daysLeft: diff, passed: diff < 0, urgent: diff >= 0 && diff <= 7 };
+    });
+    setDeadlineResult({ caseName: deadlineCaseType, statute: c.statute, steps, next: steps.find(s => !s.passed) || null });
+  }
+
+  /* ── Contract Drafting ── */
+  async function draftContract() {
+    if (contractLoading) return;
+    setContractResult("");
+    setContractLoading(true);
+    try {
+      const res = await fetch(DRAFT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contractType, params: contractParams, language }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Draft failed");
+      setContractResult(d.contract);
+    } catch (err) {
+      setContractResult(err.message || "Error generating contract.");
+    } finally {
+      setContractLoading(false);
+    }
+  }
+
   /* ── Document processing ── */
   function getTesseractLang() {
-    return language === "ar" ? "ara" : language === "fr" ? "fra" : "eng";
+    return (language === "ar" || language === "dar") ? "ara" : language === "fr" ? "fra" : "eng";
   }
 
   async function ocrFromImage(imageSource) {
@@ -924,9 +1427,9 @@ export default function MoroccanLawQA() {
       { text: t.chatTab, type: "h2" },
       { text: "", type: "gap" },
       ...pairs.flatMap((p, idx) => [
-        { text: `${language === "ar" ? "السؤال" : language === "fr" ? "Question" : "Question"} ${idx + 1}`, type: "h2" },
+        { text: `${(language === "ar" || language === "dar") ? "السؤال" : language === "fr" ? "Question" : "Question"} ${idx + 1}`, type: "h2" },
         { text: p.q, type: "user" },
-        { text: language === "ar" ? "الجواب" : language === "fr" ? "Réponse" : "Answer", type: "h2" },
+        { text: (language === "ar" || language === "dar") ? "الجواب" : language === "fr" ? "Réponse" : "Answer", type: "h2" },
         { text: p.a || "—", type: "ai" },
         { text: "", type: "gap" },
       ]),
@@ -951,8 +1454,8 @@ export default function MoroccanLawQA() {
 
   async function downloadMsgPdf(content, idx) {
     const prevUser = messages[idx - 1]?.role === "user" ? messages[idx - 1].content : null;
-    const qLabel = language === "ar" ? "السؤال" : language === "fr" ? "Question" : "Question";
-    const aLabel = language === "ar" ? "الجواب" : language === "fr" ? "Réponse" : "Answer";
+    const qLabel = (language === "ar" || language === "dar") ? "السؤال" : language === "fr" ? "Question" : "Question";
+    const aLabel = (language === "ar" || language === "dar") ? "الجواب" : language === "fr" ? "Réponse" : "Answer";
     const sections = [
       { text: t.brand, type: "title" },
       { text: new Date().toLocaleDateString(), type: "meta" },
@@ -1022,9 +1525,12 @@ export default function MoroccanLawQA() {
         {/* Mode toggle */}
         <div style={{ display: "flex", gap: 4, background: P.bgInput, borderRadius: 10, padding: 3 }}>
           {[
-            { m: "chat", l: t.chatTab },
-            { m: "doc", l: t.docTab },
-            { m: "learn", l: t.learnTab },
+            { m: "chat",     l: t.chatTab },
+            { m: "doc",      l: t.docTab },
+            { m: "learn",    l: t.learnTab },
+            { m: "sentence", l: t.sentenceTab },
+            { m: "deadline", l: t.deadlineTab },
+            { m: "contract", l: t.contractTab },
           ].map(({ m, l }) => {
             const on = mode === m;
             return (
@@ -1043,6 +1549,7 @@ export default function MoroccanLawQA() {
         </div>
         <div style={{ display: "flex", gap: 4 }}>
           {[
+          { c: "dar", l: "دارجة" },
             { c: "ar", l: "ع" },
             { c: "fr", l: "FR" },
             { c: "en", l: "EN" },
@@ -1051,7 +1558,7 @@ export default function MoroccanLawQA() {
             return (
               <button key={c} onClick={() => { setLanguage(c); setMessages([]); setInput(""); }}
                 style={{
-                  padding: "6px 14px", fontSize: 12, fontWeight: 600, fontFamily: c === "ar" ? FA : F,
+                  padding: "6px 14px", fontSize: 12, fontWeight: 600, fontFamily: (c === "ar" || c === "dar") ? FA : F,
                   background: on ? P.gold : "transparent",
                   color: on ? P.bg : P.textDim,
                   border: on ? "none" : `1px solid ${P.border}`,
@@ -1321,6 +1828,250 @@ export default function MoroccanLawQA() {
               </div>
             )}
           </div>
+        ) : mode === "sentence" ? (
+          /* ── Sentence Estimator View ── */
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
+            {sentenceResult ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 10 }}>
+                  <span style={{ fontSize: 13, color: P.text, fontFamily: ff, flex: 1 }}>{t.sentenceCrimes[sentenceCrime]}</span>
+                  <button onClick={() => setSentenceResult(null)} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, background: "transparent", color: P.gold, border: `1px solid ${P.gold}40`, borderRadius: 6, cursor: "pointer", fontFamily: ff }}>{t.sentenceReset}</button>
+                </div>
+                <div style={{ background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.sentenceBaseRange}</span>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 140, padding: "12px 16px", background: P.bg, borderRadius: 10, border: `1px solid ${P.border}` }}>
+                      <div style={{ fontSize: 11, color: P.textDim, marginBottom: 4 }}>{t.sentencePrison}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: P.gold, fontFamily: ff }}>{sentenceResult.base.prison}</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 140, padding: "12px 16px", background: P.bg, borderRadius: 10, border: `1px solid ${P.border}` }}>
+                      <div style={{ fontSize: 11, color: P.textDim, marginBottom: 4 }}>{t.sentenceFine}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: P.gold, fontFamily: ff }}>{sentenceResult.base.fine}</div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ background: P.bgCard, border: `1px solid ${P.gold}40`, borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: P.gold, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.sentenceAdjRange}</span>
+                    <span style={{ fontSize: 11, color: P.textDim }}>{t.sentenceMultiplier}: ×{sentenceResult.multiplier}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 140, padding: "12px 16px", background: `${P.gold}10`, borderRadius: 10, border: `1px solid ${P.gold}30` }}>
+                      <div style={{ fontSize: 11, color: P.textDim, marginBottom: 4 }}>{t.sentencePrison}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: P.gold, fontFamily: ff }}>{sentenceResult.adjusted.prison}</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 140, padding: "12px 16px", background: `${P.gold}10`, borderRadius: 10, border: `1px solid ${P.gold}30` }}>
+                      <div style={{ fontSize: 11, color: P.textDim, marginBottom: 4 }}>{t.sentenceFine}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: P.gold, fontFamily: ff }}>{sentenceResult.adjusted.fine}</div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 12, padding: "14px 20px" }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.sentenceArticles}: </span>
+                  <span style={{ fontSize: 13, color: P.textMid, fontFamily: ff }}>{sentenceResult.articles}</span>
+                </div>
+                {(sentenceResult.aggApplied.length > 0 || sentenceResult.mitApplied.length > 0) && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {sentenceResult.aggApplied.map(k => <span key={k} style={{ padding: "4px 12px", fontSize: 11, background: "#e0707018", color: "#e07070", border: "1px solid #e0707030", borderRadius: 20, fontFamily: ff }}>{t.sentenceAggFactors[k]}</span>)}
+                    {sentenceResult.mitApplied.map(k => <span key={k} style={{ padding: "4px 12px", fontSize: 11, background: `${P.gold}15`, color: P.gold, border: `1px solid ${P.gold}30`, borderRadius: 20, fontFamily: ff }}>{t.sentenceMitFactors[k]}</span>)}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ width: 52, height: 52, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg,${P.gold}18,${P.gold}08)`, border: `1px solid ${P.gold}30`, borderRadius: 14 }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  </div>
+                  <h2 style={{ fontSize: rtl ? 22 : 24, fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.sentenceTitle}</h2>
+                  <p style={{ fontSize: 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.sentenceDesc}</p>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.sentenceCrimeLabel}</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 8 }}>
+                    {Object.entries(t.sentenceCrimes).map(([k, v]) => {
+                      const active = sentenceCrime === k;
+                      return (
+                        <button key={k} onClick={() => setSentenceCrime(k)}
+                          style={{ padding: "10px 14px", background: active ? `${P.gold}18` : P.bgCard, border: `1px solid ${active ? P.gold + "60" : P.border}`, borderRadius: 10, cursor: "pointer", fontFamily: ff, fontSize: 12, color: active ? P.gold : P.textMid, textAlign: rtl ? "right" : "left", transition: `all 200ms ${E}` }}
+                          onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.background = P.bgHover; } }}
+                          onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.background = P.bgCard; } }}
+                        >{v}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.sentenceAggLabel}</span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {Object.entries(t.sentenceAggFactors).map(([k, v]) => {
+                      const active = sentenceAgg.includes(k);
+                      return (
+                        <button key={k} onClick={() => setSentenceAgg(prev => active ? prev.filter(x => x !== k) : [...prev, k])}
+                          style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, fontFamily: ff, background: active ? "#e0707018" : "transparent", color: active ? "#e07070" : P.textDim, border: `1px solid ${active ? "#e0707050" : P.border}`, borderRadius: 20, cursor: "pointer", transition: `all 200ms ${E}` }}
+                        >{v}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.sentenceMitLabel}</span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {Object.entries(t.sentenceMitFactors).map(([k, v]) => {
+                      const active = sentenceMit.includes(k);
+                      return (
+                        <button key={k} onClick={() => setSentenceMit(prev => active ? prev.filter(x => x !== k) : [...prev, k])}
+                          style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, fontFamily: ff, background: active ? `${P.gold}18` : "transparent", color: active ? P.gold : P.textDim, border: `1px solid ${active ? P.gold + "50" : P.border}`, borderRadius: 20, cursor: "pointer", transition: `all 200ms ${E}` }}
+                        >{v}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <button onClick={estimateSentence} disabled={!sentenceCrime}
+                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: sentenceCrime ? P.gold : P.bgHover, color: sentenceCrime ? P.bg : P.textDim, border: "none", borderRadius: 12, cursor: sentenceCrime ? "pointer" : "not-allowed", transition: `all 250ms ${E}` }}
+                >{t.sentenceBtn}</button>
+              </div>
+            )}
+          </div>
+        ) : mode === "deadline" ? (
+          /* ── Legal Deadline Calculator View ── */
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
+            {deadlineResult ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 10 }}>
+                  <span style={{ fontSize: 13, color: P.text, fontFamily: ff, flex: 1 }}>{t.deadlineCases[deadlineResult.caseName]}</span>
+                  <span style={{ fontSize: 11, color: P.textDim, marginInlineEnd: 8 }}>{deadlineResult.statute}</span>
+                  <button onClick={() => setDeadlineResult(null)} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, background: "transparent", color: P.gold, border: `1px solid ${P.gold}40`, borderRadius: 6, cursor: "pointer", fontFamily: ff }}>{t.deadlineReset}</button>
+                </div>
+                {deadlineResult.next && (
+                  <div style={{ padding: "14px 20px", background: `${P.gold}12`, border: `1px solid ${P.gold}40`, borderRadius: 12, display: "flex", alignItems: "center", gap: 12 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <div>
+                      <div style={{ fontSize: 11, color: P.gold, marginBottom: 2 }}>{t.deadlineNext}</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: P.text, fontFamily: ff }}>{t.deadlineSteps[deadlineResult.next.dayKey]} — {deadlineResult.next.date}</div>
+                      <div style={{ fontSize: 12, color: P.gold }}>{deadlineResult.next.daysLeft} {t.deadlineDaysLeft}</div>
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {deadlineResult.steps.map((s, i) => (
+                    <div key={i} style={{ padding: "14px 16px", background: P.bgCard, border: `1px solid ${s.urgent ? P.gold + "50" : P.border}`, borderRadius: 10, display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: s.passed ? P.bgHover : `${P.gold}15`, border: `1px solid ${s.passed ? P.border : P.gold + "40"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: s.passed ? P.textDim : P.gold }}>{i + 1}</span>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: s.passed ? P.textDim : P.text, fontFamily: ff }}>{t.deadlineSteps[s.dayKey]}</div>
+                        <div style={{ fontSize: 12, color: P.textDim, marginTop: 2 }}>{s.date}</div>
+                      </div>
+                      <div>
+                        {s.passed
+                          ? <span style={{ fontSize: 11, color: P.textDim, padding: "3px 10px", border: `1px solid ${P.border}`, borderRadius: 20 }}>{t.deadlinePassed}</span>
+                          : s.urgent
+                          ? <span style={{ fontSize: 11, color: P.gold, padding: "3px 10px", background: `${P.gold}15`, border: `1px solid ${P.gold}40`, borderRadius: 20 }}>{t.deadlineUrgent}</span>
+                          : <span style={{ fontSize: 11, color: P.textDim }}>{s.daysLeft} {t.deadlineDaysLeft}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ width: 52, height: 52, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg,${P.gold}18,${P.gold}08)`, border: `1px solid ${P.gold}30`, borderRadius: 14 }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  </div>
+                  <h2 style={{ fontSize: rtl ? 22 : 24, fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.deadlineTitle}</h2>
+                  <p style={{ fontSize: 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.deadlineDesc}</p>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.deadlineDateLabel}</span>
+                  <input type="date" value={deadlineDate} onChange={e => setDeadlineDate(e.target.value)}
+                    style={{ height: 44, padding: "0 14px", fontSize: 13, fontFamily: ff, color: P.text, background: P.bgInput, border: `1px solid ${P.border}`, borderRadius: 10, outline: "none", width: "100%", boxSizing: "border-box", colorScheme: "dark" }}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.deadlineCaseLabel}</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 8 }}>
+                    {Object.entries(t.deadlineCases).map(([k, v]) => {
+                      const active = deadlineCaseType === k;
+                      return (
+                        <button key={k} onClick={() => setDeadlineCaseType(k)}
+                          style={{ padding: "10px 14px", background: active ? `${P.gold}18` : P.bgCard, border: `1px solid ${active ? P.gold + "60" : P.border}`, borderRadius: 10, cursor: "pointer", fontFamily: ff, fontSize: 12, color: active ? P.gold : P.textMid, textAlign: rtl ? "right" : "left", transition: `all 200ms ${E}` }}
+                          onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.background = P.bgHover; } }}
+                          onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.background = P.bgCard; } }}
+                        >{v}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <button onClick={calcDeadlines} disabled={!deadlineCaseType}
+                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: deadlineCaseType ? P.gold : P.bgHover, color: deadlineCaseType ? P.bg : P.textDim, border: "none", borderRadius: 12, cursor: deadlineCaseType ? "pointer" : "not-allowed", transition: `all 250ms ${E}` }}
+                >{t.deadlineBtn}</button>
+              </div>
+            )}
+          </div>
+        ) : mode === "contract" ? (
+          /* ── Contract Drafting View ── */
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
+            {contractResult ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 10 }}>
+                  <span style={{ fontSize: 13, color: P.text, fontFamily: ff, flex: 1 }}>{t.contractTypes[contractType]}</span>
+                  <button onClick={() => copyToClipboard(contractResult, "contract")} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, background: "transparent", color: copiedId === "contract" ? P.gold : P.textDim, border: `1px solid ${copiedId === "contract" ? P.gold + "40" : P.border}`, borderRadius: 6, cursor: "pointer", fontFamily: ff }}>{copiedId === "contract" ? t.copied : t.contractCopy}</button>
+                  <button onClick={() => setContractResult("")} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, background: "transparent", color: P.gold, border: `1px solid ${P.gold}40`, borderRadius: 6, cursor: "pointer", fontFamily: ff }}>{t.contractReset}</button>
+                </div>
+                <div style={{ background: P.bgCard, border: `1px solid ${P.gold}30`, borderRadius: 12, padding: 20, fontSize: 13, lineHeight: 2, color: P.textMid, whiteSpace: "pre-wrap", fontFamily: ff, direction: "ltr", maxHeight: "60vh", overflowY: "auto" }}>{contractResult}</div>
+                <p style={{ fontSize: 11, color: P.textDim, textAlign: "center" }}>{t.contractDisclaimer}</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ width: 52, height: 52, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg,${P.gold}18,${P.gold}08)`, border: `1px solid ${P.gold}30`, borderRadius: 14 }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  </div>
+                  <h2 style={{ fontSize: rtl ? 22 : 24, fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.contractTitle}</h2>
+                  <p style={{ fontSize: 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.contractDesc}</p>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.contractTypeLabel}</span>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {Object.entries(t.contractTypes).map(([k, v]) => {
+                      const active = contractType === k;
+                      return (
+                        <button key={k} onClick={() => { setContractType(k); setContractParams({}); }}
+                          style={{ padding: "8px 20px", fontSize: 13, fontWeight: 600, fontFamily: ff, background: active ? P.gold : P.bgCard, color: active ? P.bg : P.textDim, border: `1px solid ${active ? P.gold : P.border}`, borderRadius: 8, cursor: "pointer", transition: `all 200ms ${E}` }}
+                        >{v}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 12 }}>
+                  {(CONTRACT_FIELDS[contractType] || []).map(field => (
+                    <div key={field.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{field.label[language]}</label>
+                      {field.type === "textarea" ? (
+                        <textarea value={contractParams[field.id] || ""} onChange={e => setContractParams(p => ({ ...p, [field.id]: e.target.value }))}
+                          rows={3} style={{ padding: "10px 14px", fontSize: 13, fontFamily: ff, color: P.text, background: P.bgInput, border: `1px solid ${P.border}`, borderRadius: 10, outline: "none", resize: "vertical", direction: rtl ? "rtl" : "ltr", transition: `all 200ms ${E}` }}
+                          onFocus={e => { e.currentTarget.style.borderColor = P.goldMuted; }} onBlur={e => { e.currentTarget.style.borderColor = P.border; }}
+                        />
+                      ) : (
+                        <input type={field.type} value={contractParams[field.id] || ""} onChange={e => setContractParams(p => ({ ...p, [field.id]: e.target.value }))}
+                          style={{ height: 44, padding: "0 14px", fontSize: 13, fontFamily: ff, color: P.text, background: P.bgInput, border: `1px solid ${P.border}`, borderRadius: 10, outline: "none", direction: field.type === "date" ? "ltr" : (rtl ? "rtl" : "ltr"), transition: `all 200ms ${E}`, colorScheme: "dark" }}
+                          onFocus={e => { e.currentTarget.style.borderColor = P.goldMuted; }} onBlur={e => { e.currentTarget.style.borderColor = P.border; }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button onClick={draftContract} disabled={contractLoading}
+                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: contractLoading ? P.bgHover : P.gold, color: contractLoading ? P.textDim : P.bg, border: "none", borderRadius: 12, cursor: contractLoading ? "not-allowed" : "pointer", transition: `all 250ms ${E}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                  {contractLoading ? (
+                    <>{t.contractGenerating}<span style={{ display: "inline-flex", gap: 3 }}>{[0,1,2].map(d => <span key={d} style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", animation: `dots 1.4s infinite ${d*0.2}s` }} />)}</span></>
+                  ) : t.contractBtn}
+                </button>
+              </div>
+            )}
+          </div>
         ) : mode === "learn" ? (
           /* ── Legal Concepts Learn View ── */
           <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
@@ -1581,6 +2332,18 @@ export default function MoroccanLawQA() {
                 </div>
               </div>
             )}
+            {followUps.length > 0 && !loading && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "8px 0 4px", animation: `fadeUp 300ms ${E} forwards` }}>
+                <span style={{ fontSize: 11, color: P.textDim, width: "100%", marginBottom: 2, fontFamily: ff }}>{t.followUpTitle}</span>
+                {followUps.map((q, i) => (
+                  <button key={i} onClick={() => { setFollowUps([]); send(q); }}
+                    style={{ padding: "7px 14px", fontSize: 12, fontFamily: ff, background: "transparent", color: P.textMid, border: `1px solid ${P.border}`, borderRadius: 20, cursor: "pointer", transition: `all 200ms ${E}`, textAlign: rtl ? "right" : "left" }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.color = P.gold; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.color = P.textMid; }}
+                  >{q}</button>
+                ))}
+              </div>
+            )}
             <div ref={endRef} />
           </div>
         )}
@@ -1596,7 +2359,7 @@ export default function MoroccanLawQA() {
         <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", gap: 10, alignItems: "center" }}>
           <input
             type="text" value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => { setInput(e.target.value); if (voiceError) setVoiceError(""); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder={t.placeholder}
             disabled={loading}
@@ -1613,6 +2376,33 @@ export default function MoroccanLawQA() {
             onFocus={(e) => { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.boxShadow = `0 0 0 3px ${P.gold}12`; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.boxShadow = "none"; }}
           />
+          {navigator.mediaDevices && (
+            <button
+              onClick={voiceTranscribing ? undefined : isListening ? stopVoice : startVoice}
+              title={voiceTranscribing ? t.voiceTranscribing : isListening ? t.voiceTapToStop : t.voiceListen}
+              style={{
+                width: 44, height: 44, borderRadius: 10,
+                border: `1px solid ${isListening ? P.gold + "60" : voiceTranscribing ? P.gold + "40" : P.border}`,
+                background: isListening ? `${P.gold}18` : voiceTranscribing ? `${P.gold}10` : "transparent",
+                color: isListening ? P.gold : voiceTranscribing ? P.goldMuted : P.textDim,
+                cursor: voiceTranscribing ? "default" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: `all 200ms ${E}`, flexShrink: 0,
+              }}>
+              {voiceTranscribing
+                ? <span style={{ display: "inline-flex", gap: 3 }}>
+                    {[0, 1, 2].map((d) => (
+                      <span key={d} style={{
+                        width: 4, height: 4, borderRadius: "50%", background: "currentColor",
+                        animation: `dots 1.2s infinite ${d * 0.2}s`,
+                      }} />
+                    ))}
+                  </span>
+                : isListening
+                ? <svg width="16" height="16" viewBox="0 0 24 24" fill={P.gold}><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>}
+            </button>
+          )}
           <button
             onClick={() => send()}
             disabled={loading || !input.trim()}
@@ -1631,6 +2421,9 @@ export default function MoroccanLawQA() {
           ><SendIcon /></button>
         </div>
         <p style={{ maxWidth: 760, margin: "10px auto 0", fontSize: 11, color: P.textDim, textAlign: "center", lineHeight: 1.4 }}>{t.disclaimer}</p>
+        {voiceError && (
+          <p style={{ maxWidth: 760, margin: "6px auto 0", fontSize: 12, color: "#e07070", textAlign: "center", fontFamily: ff }}>{voiceError}</p>
+        )}
       </div>
       )}
     </div>
