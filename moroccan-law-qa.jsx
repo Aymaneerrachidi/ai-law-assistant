@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 
-const API_URL = "http://localhost:8787/api/moroccan-law-qa";
-const ANALYZE_URL = "http://localhost:8787/api/analyze-document";
-const EXTRACT_URL = "http://localhost:8787/api/extract-with-llm";
-const EXPLAIN_URL = "http://localhost:8787/api/explain-concept";
-const TRANSCRIBE_URL = "http://localhost:8787/api/transcribe";
+const BASE = import.meta.env.VITE_API_URL || "";
+const API_URL = `${BASE}/api/moroccan-law-qa`;
+const ANALYZE_URL = `${BASE}/api/analyze-document`;
+const EXTRACT_URL = `${BASE}/api/extract-with-llm`;
+const EXPLAIN_URL = `${BASE}/api/explain-concept`;
+const TRANSCRIBE_URL = `${BASE}/api/transcribe`;
 
 /* ─── Translations ─── */
 const UI = {

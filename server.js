@@ -719,3 +719,5 @@ app.post("/api/transcribe", express.json({ limit: "15mb" }), async (req, res) =>
 app.listen(port, () => {
   console.log(`Moroccan Law QA proxy listening on http://localhost:${port}`);
 });
+
+export default app;
