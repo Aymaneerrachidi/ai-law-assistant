@@ -645,6 +645,7 @@ export default function MoroccanLawQA() {
   const darijaMatcherRef = useRef(null);
   const darijaRecogRef = useRef(null);
   const darijaStandardRef = useRef("");
+  const darijaIntentRef = useRef("");
   useEffect(() => { darijaMatcherRef.current = new DarijaPhoneticMatcher(); }, []);
   // Follow-up suggestions
   const [followUps, setFollowUps] = useState([]);
@@ -701,6 +702,10 @@ export default function MoroccanLawQA() {
     setMessages(next);
     setLoading(true);
     try {
+      // Detect intent for Darija before clearing the ref
+      if (language === "dar" && darijaMatcherRef.current) {
+        darijaIntentRef.current = darijaMatcherRef.current.identifyIntent(c);
+      }
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -708,9 +713,11 @@ export default function MoroccanLawQA() {
           messages: next,
           language,
           ...(language === "dar" && darijaStandardRef.current ? { standardArabic: darijaStandardRef.current } : {}),
+          ...(language === "dar" && darijaIntentRef.current ? { darijaIntent: darijaIntentRef.current } : {}),
         }),
       });
       darijaStandardRef.current = "";
+      darijaIntentRef.current = "";
       const d = await safeJson(res);
       const reply = d.content || "No response received.";
       setMessages((p) => [...p, { role: "assistant", content: reply }]);

@@ -71,7 +71,7 @@ This information is educational and not a substitute for formal legal advice; fo
   dar: `أنت مساعد قانوني مغربي متخصص في القانون المغربي، وكتجاوب بالدارجة المغربية بشكل طبيعي وواضح.
 
 القاعدة الأولى: دايماً كتجاوب بالدارجة المغربية، مهما كانت لغة السؤال.
-القاعدة الثانية: كتستعمل كلمات دارجة طبيعية: واش، شنو، كيفاش، علاش، شحال، دابا، خلاص، بزاف، شوية، تمام.
+القاعدة الثانية: كتستعمل كلمات دارجة طبيعية: واش، شنو، كيفاش، علاش، شحال، دابا، خلاص، بزاف، شوية، تمام، ديال، غادي، لازم، بحاله.
 القاعدة الثالثة: ما كتستعملش تنسيق markdown ولا قوائم ولا رموز زخرفية.
 القاعدة الرابعة: كتكتب في فقرات طبيعية متدفقة.
 
@@ -87,6 +87,62 @@ This information is educational and not a substitute for formal legal advice; fo
 
 جملة المسؤولية الافتراضية:
 هاد المعلومات للتوعية القانونية فقط وما عندهاش قيمة الاستشارة القانونية الرسمية — من الأفضل تستشير محامي مغربي متخصص حسب قضيتك.`,
+};
+
+// Intent-specific addenda injected into the Darija system prompt based on client-detected intent
+const DARIJA_INTENT_ADDENDA = {
+  sentence_prediction: `
+تعليمات خاصة بالعقوبات (sentence_prediction):
+- حدد نوع الجريمة: جناية أم جنحة
+- أعط نطاق العقوبة بالضبط: من X إلى Y سنة/شهر
+- اذكر المادة القانونية المعنية داخل الجملة
+- اشرح كيفاش الظروف المشددة أو المخففة كتبدّل العقوبة
+- استعمل دارجة حقيقية: "العقوبة تكون من X إلى Y"، "حسب المادة XXX"`,
+
+  deadline: `
+تعليمات خاصة بالمواعيد (deadline):
+- أعط العدد الدقيق للأيام بحاله
+- وضح من أي تاريخ كتبدأ المدة
+- ذكر أي محكمة أو جهة لازم يروح إليها
+- نبّه على خطر تجاوز المدة: "إذا تجاوزت المدة غادي تخسر الحق"
+- استعمل دارجة واضحة: "عندك X أيام بحاله من الحكم"`,
+
+  crime_identification: `
+تعليمات خاصة بتصنيف الجرائم (crime_identification):
+- صنّف الجريمة: جناية (خطيرة) أم جنحة (أخف) أم مخالفة
+- اذكر تعريف الجريمة بوضوح بالدارجة
+- أعط المواد القانونية المعنية
+- وضح ما هي الأدلة اللي كتكون كافية
+- دارجة: "هاد الحاجة جناية ولا جنحة؟"`,
+
+  family_law: `
+تعليمات خاصة بقانون الأسرة (family_law):
+- استند لمدونة الأسرة (القانون 70-03) وأذكر المواد
+- غطّي: شروط الزواج، الصداق، الطلاق وأنواعه، الحضانة، النفقة، الإرث
+- استعمل دارجة محترمة: "الصداق واجب قانوني"، "الحضانة للأم في الأول"
+- وضح الإجراءات عند المحكمة`,
+
+  procedure: `
+تعليمات خاصة بالإجراءات القانونية (procedure):
+- اشرح الخطوات بالترتيب بالدارجة
+- حدد: المحكمة المختصة، الوثائق المطلوبة، المواعيد
+- استعمل دارجة واضحة: "غادي تروح للمحكمة الابتدائية"، "دير الملف كامل"
+- وضح النتيجة المتوقعة من كل خطوة`,
+
+  rights: `
+تعليمات خاصة بالحقوق والحماية (rights):
+- حدد الحق القانوني بوضوح
+- اذكر القانون أو المادة اللي كتحمي هاد الحق
+- اشرح كيفاش يدافع الشخص على حقوقه
+- وضح العقوبة على من يخرق هاد الحقوق
+- دارجة قوية: "عندك حق كامل بحاله"، "القانون كيحمي ليك"`,
+
+  appeal: `
+تعليمات خاصة بالطعن والاستئناف (appeal):
+- وضح أنواع الطعن: استئناف (10 أيام)، نقض (10 أيام من قرار الاستئناف)
+- حدد المحاكم المختصة بكل نوع
+- اذكر الشروط الشكلية لقبول الطعن
+- نبّه على مواعيد الاستئناف: "عندك 10 أيام بحاله من الحكم"`,
 };
 
 const DOMAIN_PROMPTS = {
@@ -130,7 +186,7 @@ function detectDomain(text) {
   return "general";
 }
 
-function buildSystemPrompt(language, domain, userText) {
+function buildSystemPrompt(language, domain, userText, darijaIntent) {
   const lang = ["ar", "fr", "en", "dar"].includes(language) ? language : "ar";
   const primary = PRIMARY_SYSTEM_PROMPTS[lang] || PRIMARY_SYSTEM_PROMPTS["ar"];
   const domainPrompt = DOMAIN_PROMPTS[domain] || DOMAIN_PROMPTS.general;
@@ -159,7 +215,13 @@ function buildSystemPrompt(language, domain, userText) {
       : lang === "dar"
       ? "\n\nتذكير حتمي: أجب بالدارجة المغربية فقط، باستخدام كلمات مغربية طبيعية."
       : "";
-  return `${primary}${legalCtxBlock}\n\nDomain instructions:\n${domainPrompt}${langOverride}`;
+
+  // For Darija: append intent-specific instructions when the client detected a clear intent
+  const intentAddendum = (lang === "dar" && darijaIntent && DARIJA_INTENT_ADDENDA[darijaIntent])
+    ? `\n\n${DARIJA_INTENT_ADDENDA[darijaIntent]}`
+    : "";
+
+  return `${primary}${legalCtxBlock}\n\nDomain instructions:\n${domainPrompt}${langOverride}${intentAddendum}`;
 }
 
 app.use(cors());
@@ -201,7 +263,9 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
     const textForRAG = req.body?.standardArabic
       ? `${lastUserMessage} ${req.body.standardArabic}`
       : lastUserMessage;
-    const systemPrompt = buildSystemPrompt(lang, domain, textForRAG);
+    // Accept client-detected Darija intent for intent-specific prompt injection
+    const darijaIntent = (lang === "dar" && req.body?.darijaIntent) ? String(req.body.darijaIntent).slice(0, 50) : null;
+    const systemPrompt = buildSystemPrompt(lang, domain, textForRAG, darijaIntent);
 
     const messages = [
       { role: "system", content: systemPrompt },
