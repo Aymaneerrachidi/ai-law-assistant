@@ -583,6 +583,8 @@ if (typeof document !== "undefined" && !document.getElementById(styleId)) {
     *::-webkit-scrollbar-thumb:hover{background:#5a4f43}
     .msg-action-btn{transition:background 150ms,color 150ms,border-color 150ms}
     .msg-action-btn:hover{color:#c8a45e!important;border-color:#c8a45e50!important}
+    .hide-scrollbar::-webkit-scrollbar{display:none}
+    .hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
   `;
   document.head.appendChild(s);
 }
@@ -650,6 +652,13 @@ export default function MoroccanLawQA() {
   const [deadlineResult, setDeadlineResult] = useState(null);
   const endRef = useRef(null);
   const fileRef = useRef(null);
+
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 640 : false);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
 
   const rtl = language === "ar" || language === "dar";
   const t = UI[language];
@@ -1425,9 +1434,9 @@ export default function MoroccanLawQA() {
       <div style={{
         background: "#1a1000",
         borderBottom: `1px solid ${P.gold}40`,
-        padding: "10px 32px",
+        padding: isMobile ? "8px 14px" : "10px 32px",
         textAlign: "center",
-        fontSize: 12,
+        fontSize: isMobile ? 11 : 12,
         color: P.gold,
         lineHeight: 1.5,
         fontFamily: ff,
@@ -1438,17 +1447,46 @@ export default function MoroccanLawQA() {
       {/* ── Header ── */}
       <header style={{
         position: "sticky", top: 0, zIndex: 20,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 32px",
+        display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "center", justifyContent: "space-between",
+        padding: isMobile ? "10px 12px 8px" : "14px 32px",
+        gap: isMobile ? 10 : 0,
         background: "rgba(26,21,16,0.92)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
         borderBottom: `1px solid ${P.border}`,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <AdalaLogo />
-          <span style={{ fontSize: 18, fontWeight: 700, color: P.gold, letterSpacing: "0.5px", fontFamily: F }}>adalaapp</span>
+        {/* Top row: logo + language */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <AdalaLogo />
+            <span style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: P.gold, letterSpacing: "0.5px", fontFamily: F }}>adalaapp</span>
+          </div>
+          <div style={{ display: "flex", gap: 4 }}>
+            {[
+              { c: "dar", l: "دارجة" },
+              { c: "ar", l: "ع" },
+              { c: "fr", l: "FR" },
+              { c: "en", l: "EN" },
+            ].map(({ c, l }) => {
+              const on = language === c;
+              return (
+                <button key={c} onClick={() => { setLanguage(c); setMessages([]); setInput(""); }}
+                  style={{
+                    padding: isMobile ? "5px 10px" : "6px 14px", fontSize: isMobile ? 11 : 12, fontWeight: 600, fontFamily: (c === "ar" || c === "dar") ? FA : F,
+                    background: on ? P.gold : "transparent",
+                    color: on ? P.bg : P.textDim,
+                    border: on ? "none" : `1px solid ${P.border}`,
+                    borderRadius: 20, cursor: "pointer",
+                    transition: `all 250ms ${E}`,
+                    letterSpacing: c === "ar" ? 0 : "0.5px",
+                  }}
+                  onMouseEnter={(e) => { if (!on) { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.color = P.gold; } }}
+                  onMouseLeave={(e) => { if (!on) { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.color = P.textDim; } }}
+                >{l}</button>
+              );
+            })}
+          </div>
         </div>
-        {/* Mode toggle */}
-        <div style={{ display: "flex", gap: 4, background: P.bgInput, borderRadius: 10, padding: 3 }}>
+        {/* Mode toggle – scrollable on mobile */}
+        <div className="hide-scrollbar" style={{ display: "flex", gap: 4, background: P.bgInput, borderRadius: 10, padding: 3, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           {[
             { m: "chat",     l: t.chatTab },
             { m: "doc",      l: t.docTab },
@@ -1460,38 +1498,13 @@ export default function MoroccanLawQA() {
             return (
               <button key={m} onClick={() => setMode(m)}
                 style={{
-                  padding: "6px 16px", fontSize: 12, fontWeight: 600, fontFamily: ff,
+                  padding: isMobile ? "6px 12px" : "6px 16px", fontSize: isMobile ? 11 : 12, fontWeight: 600, fontFamily: ff,
                   background: on ? P.gold : "transparent",
                   color: on ? P.bg : P.textDim,
                   border: "none", borderRadius: 8, cursor: "pointer",
                   transition: `all 250ms ${E}`,
-                  whiteSpace: "nowrap",
+                  whiteSpace: "nowrap", flexShrink: 0,
                 }}
-              >{l}</button>
-            );
-          })}
-        </div>
-        <div style={{ display: "flex", gap: 4 }}>
-          {[
-          { c: "dar", l: "دارجة" },
-            { c: "ar", l: "ع" },
-            { c: "fr", l: "FR" },
-            { c: "en", l: "EN" },
-          ].map(({ c, l }) => {
-            const on = language === c;
-            return (
-              <button key={c} onClick={() => { setLanguage(c); setMessages([]); setInput(""); }}
-                style={{
-                  padding: "6px 14px", fontSize: 12, fontWeight: 600, fontFamily: (c === "ar" || c === "dar") ? FA : F,
-                  background: on ? P.gold : "transparent",
-                  color: on ? P.bg : P.textDim,
-                  border: on ? "none" : `1px solid ${P.border}`,
-                  borderRadius: 20, cursor: "pointer",
-                  transition: `all 250ms ${E}`,
-                  letterSpacing: c === "ar" ? 0 : "0.5px",
-                }}
-                onMouseEnter={(e) => { if (!on) { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.color = P.gold; } }}
-                onMouseLeave={(e) => { if (!on) { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.color = P.textDim; } }}
               >{l}</button>
             );
           })}
@@ -1499,11 +1512,11 @@ export default function MoroccanLawQA() {
       </header>
 
       {/* ── Content ── */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 760, width: "100%", margin: "0 auto", padding: "0 20px", position: "relative" }}>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 760, width: "100%", margin: "0 auto", padding: isMobile ? "0 10px" : "0 20px", position: "relative" }}>
 
         {mode === "doc" ? (
           /* ── Document Analysis View ── */
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 0 40px", animation: `fadeUp 400ms ${E} forwards` }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 20px" : "40px 0 40px", animation: `fadeUp 400ms ${E} forwards` }}>
             {docState === "idle" && !extractedText ? (
               /* Upload area */
               <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
@@ -1519,8 +1532,8 @@ export default function MoroccanLawQA() {
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
                     </svg>
                   </div>
-                  <h2 style={{ fontSize: rtl ? 26 : 28, fontWeight: 700, margin: "0 0 10px", color: P.text, fontFamily: ff }}>{t.uploadTitle}</h2>
-                  <p style={{ fontSize: 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.uploadDesc}</p>
+                  <h2 style={{ fontSize: isMobile ? (rtl ? 20 : 22) : (rtl ? 26 : 28), fontWeight: 700, margin: "0 0 10px", color: P.text, fontFamily: ff }}>{t.uploadTitle}</h2>
+                  <p style={{ fontSize: isMobile ? 12 : 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.uploadDesc}</p>
                 </div>
 
                 <div
@@ -1530,7 +1543,7 @@ export default function MoroccanLawQA() {
                   onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
                   style={{
                     width: "100%", maxWidth: 480,
-                    padding: "48px 32px",
+                    padding: isMobile ? "32px 16px" : "48px 32px",
                     border: `2px dashed ${dragOver ? P.gold : P.border}`,
                     borderRadius: 16,
                     background: dragOver ? `${P.gold}08` : P.bgCard,
@@ -1754,7 +1767,7 @@ export default function MoroccanLawQA() {
           </div>
         ) : mode === "sentence" ? (
           /* ── Sentence Estimator View ── */
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 40px" : "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
             {sentenceResult ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 10 }}>
@@ -1807,12 +1820,12 @@ export default function MoroccanLawQA() {
                   <div style={{ width: 52, height: 52, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg,${P.gold}18,${P.gold}08)`, border: `1px solid ${P.gold}30`, borderRadius: 14 }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                   </div>
-                  <h2 style={{ fontSize: rtl ? 22 : 24, fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.sentenceTitle}</h2>
-                  <p style={{ fontSize: 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.sentenceDesc}</p>
+                  <h2 style={{ fontSize: isMobile ? (rtl ? 18 : 20) : (rtl ? 22 : 24), fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.sentenceTitle}</h2>
+                  <p style={{ fontSize: isMobile ? 12 : 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.sentenceDesc}</p>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.sentenceCrimeLabel}</span>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${isMobile ? 130 : 160}px,1fr))`, gap: 8 }}>
                     {Object.entries(t.sentenceCrimes).map(([k, v]) => {
                       const active = sentenceCrime === k;
                       return (
@@ -1859,7 +1872,7 @@ export default function MoroccanLawQA() {
           </div>
         ) : mode === "deadline" ? (
           /* ── Legal Deadline Calculator View ── */
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 40px" : "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
             {deadlineResult ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 10 }}>
@@ -1904,8 +1917,8 @@ export default function MoroccanLawQA() {
                   <div style={{ width: 52, height: 52, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg,${P.gold}18,${P.gold}08)`, border: `1px solid ${P.gold}30`, borderRadius: 14 }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   </div>
-                  <h2 style={{ fontSize: rtl ? 22 : 24, fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.deadlineTitle}</h2>
-                  <p style={{ fontSize: 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.deadlineDesc}</p>
+                  <h2 style={{ fontSize: isMobile ? (rtl ? 18 : 20) : (rtl ? 22 : 24), fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.deadlineTitle}</h2>
+                  <p style={{ fontSize: isMobile ? 12 : 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.deadlineDesc}</p>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.deadlineDateLabel}</span>
@@ -1915,7 +1928,7 @@ export default function MoroccanLawQA() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.deadlineCaseLabel}</span>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${isMobile ? 140 : 180}px,1fr))`, gap: 8 }}>
                     {Object.entries(t.deadlineCases).map(([k, v]) => {
                       const active = deadlineCaseType === k;
                       return (
@@ -1936,7 +1949,7 @@ export default function MoroccanLawQA() {
           </div>
         ) : mode === "learn" ? (
           /* ── Legal Concepts Learn View ── */
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 40px" : "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
             {learnResult ? (
               /* ── Result ── */
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -1964,12 +1977,12 @@ export default function MoroccanLawQA() {
                   <div style={{ width: 52, height: 52, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg,${P.gold}18,${P.gold}08)`, border: `1px solid ${P.gold}30`, borderRadius: 14 }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                   </div>
-                  <h2 style={{ fontSize: rtl ? 24 : 26, fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.learnTitle}</h2>
-                  <p style={{ fontSize: 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.learnDesc}</p>
+                  <h2 style={{ fontSize: isMobile ? (rtl ? 20 : 22) : (rtl ? 24 : 26), fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.learnTitle}</h2>
+                  <p style={{ fontSize: isMobile ? 12 : 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.learnDesc}</p>
                 </div>
 
                 {/* Profile selectors */}
-                <div style={{ background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 12, padding: "16px 20px", display: "flex", flexWrap: "wrap", gap: 20 }}>
+                <div style={{ background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 12, padding: isMobile ? "12px 12px" : "16px 20px", display: "flex", flexWrap: "wrap", gap: isMobile ? 14 : 20 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em", width: "100%" }}>{t.learnProfile}</span>
                   {[
                     { label: t.learnLevelLabel, key: "level", state: learnLevel, set: setLearnLevel, opts: Object.entries(t.learnLevels) },
@@ -1993,7 +2006,7 @@ export default function MoroccanLawQA() {
                 {/* Concept grid */}
                 <div>
                   <p style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 12 }}>{t.learnConceptsTitle}</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${isMobile ? 140 : 200}px,1fr))`, gap: 8 }}>
                     {learnConcepts[language].map((c) => {
                       const active = learnConcept === c.id && !learnCustom.trim();
                       return (
@@ -2039,7 +2052,7 @@ export default function MoroccanLawQA() {
           </div>
         ) : !chat ? (
           /* ── Welcome ── */
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 0 40px", animation: `fadeUp 500ms ${E} forwards` }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: isMobile ? "30px 0 20px" : "60px 0 40px", animation: `fadeUp 500ms ${E} forwards` }}>
 
             {/* Hero */}
             <div style={{ textAlign: "center", marginBottom: 56 }}>
@@ -2054,15 +2067,15 @@ export default function MoroccanLawQA() {
                   <path d="M12 3v18M3 7l3-4 3 4M15 7l3-4 3 4" /><path d="M3 7c0 3 3 5 3 5s3-2 3-5M15 7c0 3 3 5 3 5s3-2 3-5" />
                 </svg>
               </div>
-              <h1 style={{ fontSize: rtl ? 32 : 36, fontWeight: 700, margin: "0 0 10px", color: P.text, fontFamily: ff, letterSpacing: rtl ? 0 : "-0.5px", lineHeight: 1.2 }}>{t.title}</h1>
-              <p style={{ fontSize: 15, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.subtitle}</p>
+              <h1 style={{ fontSize: isMobile ? (rtl ? 24 : 26) : (rtl ? 32 : 36), fontWeight: 700, margin: "0 0 10px", color: P.text, fontFamily: ff, letterSpacing: rtl ? 0 : "-0.5px", lineHeight: 1.2 }}>{t.title}</h1>
+              <p style={{ fontSize: isMobile ? 13 : 15, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.subtitle}</p>
             </div>
 
             {/* Domains – horizontal pills */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 40 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: isMobile ? 6 : 8, justifyContent: "center", marginBottom: isMobile ? 24 : 40 }}>
               {legalDomains[language].map((d, i) => (
                 <div key={i} style={{
-                  padding: "10px 18px",
+                  padding: isMobile ? "8px 12px" : "10px 18px",
                   background: P.bgCard,
                   border: `1px solid ${P.border}`,
                   borderRadius: 10,
@@ -2075,8 +2088,8 @@ export default function MoroccanLawQA() {
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.background = P.bgHover; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.background = P.bgCard; }}
                 >
-                  <div style={{ fontSize: 13, fontWeight: 600, color: P.text, marginBottom: 2 }}>{d.title}</div>
-                  <div style={{ fontSize: 11, color: P.textDim }}>{d.desc}</div>
+                  <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 600, color: P.text, marginBottom: 2 }}>{d.title}</div>
+                  <div style={{ fontSize: isMobile ? 10 : 11, color: P.textDim }}>{d.desc}</div>
                 </div>
               ))}
             </div>
@@ -2088,7 +2101,7 @@ export default function MoroccanLawQA() {
                 {quickQuestions[language].map((q, i) => (
                   <button key={i} onClick={() => send(q)}
                     style={{
-                      padding: "13px 18px",
+                      padding: isMobile ? "10px 14px" : "13px 18px",
                       background: P.bgCard,
                       border: `1px solid ${P.border}`,
                       borderRadius: 10,
@@ -2120,7 +2133,7 @@ export default function MoroccanLawQA() {
           </div>
         ) : (
           /* ── Messages ── */
-          <div style={{ flex: 1, overflowY: "auto", padding: "24px 0 140px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px 0 120px" : "24px 0 140px", display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: rtl ? "flex-start" : "flex-end", gap: 6, marginBottom: 4, flexShrink: 0 }}>
               {messages.some((m) => m.role === "assistant") && !loading && (
                 <button onClick={exportChatPdf} style={{ padding: "5px 12px", fontSize: 11, fontWeight: 600, fontFamily: ff, background: `${P.gold}18`, color: P.gold, border: `1px solid ${P.gold}40`, borderRadius: 8, cursor: "pointer" }}>{t.exportPdf}</button>
@@ -2215,10 +2228,10 @@ export default function MoroccanLawQA() {
       {mode === "chat" && (
       <div style={{
         position: chat ? "fixed" : "sticky", bottom: 0, left: 0, right: 0, zIndex: 20,
-        padding: "12px 20px 20px",
+        padding: isMobile ? "8px 10px 12px" : "12px 20px 20px",
         background: `linear-gradient(to top, ${P.bg} 70%, transparent)`,
       }}>
-        <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", gap: isMobile ? 6 : 10, alignItems: "center" }}>
           <input
             type="text" value={input}
             onChange={(e) => { setInput(e.target.value); if (voiceError) setVoiceError(""); }}
@@ -2226,8 +2239,8 @@ export default function MoroccanLawQA() {
             placeholder={t.placeholder}
             disabled={loading}
             style={{
-              flex: 1, height: 48, padding: "0 18px",
-              fontSize: 14, fontFamily: ff,
+              flex: 1, height: isMobile ? 42 : 48, padding: isMobile ? "0 12px" : "0 18px",
+              fontSize: isMobile ? 13 : 14, fontFamily: ff,
               color: P.text,
               background: P.bgInput,
               border: `1px solid ${P.border}`,
@@ -2243,7 +2256,7 @@ export default function MoroccanLawQA() {
               onClick={voiceTranscribing ? undefined : isListening ? stopVoice : startVoice}
               title={voiceTranscribing ? t.voiceTranscribing : isListening ? t.voiceTapToStop : t.voiceListen}
               style={{
-                width: 44, height: 44, borderRadius: 10,
+                width: isMobile ? 38 : 44, height: isMobile ? 38 : 44, borderRadius: 10,
                 border: `1px solid ${isListening ? P.gold + "60" : voiceTranscribing ? P.gold + "40" : P.border}`,
                 background: isListening ? `${P.gold}18` : voiceTranscribing ? `${P.gold}10` : "transparent",
                 color: isListening ? P.gold : voiceTranscribing ? P.goldMuted : P.textDim,
@@ -2269,7 +2282,7 @@ export default function MoroccanLawQA() {
             onClick={() => send()}
             disabled={loading || !input.trim()}
             style={{
-              width: 44, height: 44,
+              width: isMobile ? 38 : 44, height: isMobile ? 38 : 44,
               display: "flex", alignItems: "center", justifyContent: "center",
               background: loading || !input.trim() ? P.bgInput : P.gold,
               color: loading || !input.trim() ? P.textDim : P.bg,
