@@ -1536,7 +1536,7 @@ export default function MoroccanLawQA() {
   );
 
   const AdalaLogo = () => (
-    <img src="/img/logo.png" alt="adalaapp logo" width="32" height="32" style={{ borderRadius: 6, objectFit: "contain", display: "block" }} />
+    <img src="/img/logo.png" alt="adalaapp logo" width="36" height="36" style={{ borderRadius: 8, objectFit: "contain", display: "block", background: "transparent" }} />
   );
 
   return (
@@ -1569,7 +1569,9 @@ export default function MoroccanLawQA() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <AdalaLogo />
-            <span style={{ fontSize: isMobile ? 16 : 19, fontWeight: 600, color: P.gold, letterSpacing: "0.3px", fontFamily: '"Inter", sans-serif' }}>adalaapp</span>
+            <span style={{ fontSize: isMobile ? 15 : 18, fontWeight: 600, color: P.gold, letterSpacing: "0.3px", fontFamily: '"Inter", sans-serif' }}>
+              Adala App{" "}<span style={{ fontFamily: FA, fontWeight: 500, fontSize: isMobile ? 14 : 17 }}>- عدالة</span>
+            </span>
           </div>
           <div style={{ display: "flex", gap: 4, marginLeft: isMobile ? 0 : 24, marginRight: rtl ? 24 : 0 }}>
             {[
