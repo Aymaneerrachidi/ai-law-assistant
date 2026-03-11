@@ -331,12 +331,44 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
       }),
     });
 
+    // ── Fire main answer + follow-up suggestions in parallel ────────────
+    const suggestionsPromise = (async () => {
+      try {
+        const cohereKey = process.env.COHERE_API_KEY;
+        if (!cohereKey) return [];
+        const langLabel = { ar: "Arabic", fr: "French", en: "English", dar: "Moroccan Darija" }[lang] || "Arabic";
+        const sugPrompt = `You are a Moroccan law assistant. Based on this user question about Moroccan law: "${lastUserMessage.slice(0, 300)}"
+
+Generate exactly 3 short natural follow-up questions the user might want to ask next, in ${langLabel}.
+Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering. Example: ["question 1","question 2","question 3"]`;
+        const r = await fetch("https://api.cohere.com/v2/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${cohereKey}` },
+          body: JSON.stringify({
+            model: "command-a-03-2025",
+            messages: [{ role: "user", content: sugPrompt }],
+            temperature: 0.7,
+            max_tokens: 200,
+          }),
+        });
+        const sd = await r.json();
+        const raw = sd?.message?.content?.[0]?.text || "";
+        const match = raw.match(/\[[\s\S]*?\]/);
+        if (match) {
+          const arr = JSON.parse(match[0]);
+          if (Array.isArray(arr)) return arr.slice(0, 3).map(String).filter(Boolean);
+        }
+      } catch {}
+      return [];
+    })();
+
     const data = await response.json();
     const message = data?.choices?.[0]?.message;
     const content = message?.content || message?.reasoning || null;
 
     if (response.ok && content) {
-      return res.json({ content });
+      const suggestions = await suggestionsPromise;
+      return res.json({ content, suggestions });
     }
 
     console.warn("[QA] OpenRouter failed, trying Cohere fallback. Status:", response.status, JSON.stringify(data).slice(0, 200));
@@ -361,7 +393,8 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
         const fallbackData = await fallbackRes.json();
         const fallbackContent = fallbackData?.message?.content?.[0]?.text || null;
         if (fallbackRes.ok && fallbackContent) {
-          return res.json({ content: fallbackContent });
+          const suggestions = await suggestionsPromise;
+          return res.json({ content: fallbackContent, suggestions });
         }
         console.error("[QA] Cohere fallback also failed:", JSON.stringify(fallbackData).slice(0, 200));
       } catch (fallbackErr) {

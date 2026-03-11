@@ -721,20 +721,9 @@ export default function MoroccanLawQA() {
       const d = await safeJson(res);
       const reply = d.content || "No response received.";
       setMessages((p) => [...p, { role: "assistant", content: reply }]);
-      // Generate follow-up suggestions in background
-      fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: `Suggest exactly 3 short follow-up questions a user might ask next, as a JSON array of strings only, no explanation. User asked: "${c}". Language: ${language}.` }],
-          language,
-        }),
-      }).then(r => r.json()).then(d2 => {
-        try {
-          const m = (d2.content || "").match(/\[[\s\S]*?\]/);
-          if (m) { const arr = JSON.parse(m[0]); if (Array.isArray(arr) && arr.length) setFollowUps(arr.slice(0, 3)); }
-        } catch {}
-      }).catch(() => {});
+      if (Array.isArray(d.suggestions) && d.suggestions.length) {
+        setFollowUps(d.suggestions.slice(0, 3));
+      }
     } catch {
       setMessages((p) => [...p, { role: "assistant", content: "Connection error. Please try again." }]);
     } finally {
