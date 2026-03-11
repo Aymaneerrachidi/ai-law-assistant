@@ -192,6 +192,8 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
 
     const lang = req.body?.language || "ar";
     const lastUserMessage = [...inputMessages].reverse().find((m) => m?.role === "user")?.content || "";
+    // Log user query (visible in Vercel dashboard → Functions → Logs)
+    console.log(JSON.stringify({ ts: new Date().toISOString(), lang, q: lastUserMessage.slice(0, 300) }));
     // For Darija, use standard Arabic conversion for domain detection if provided by client
     const textForDomain = (lang === "dar" && req.body?.standardArabic) ? req.body.standardArabic : lastUserMessage;
     const domain = detectDomain(textForDomain);
