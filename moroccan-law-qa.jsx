@@ -4,14 +4,13 @@ const API_URL = "http://localhost:8787/api/moroccan-law-qa";
 const ANALYZE_URL = "http://localhost:8787/api/analyze-document";
 const EXTRACT_URL = "http://localhost:8787/api/extract-with-llm";
 const EXPLAIN_URL = "http://localhost:8787/api/explain-concept";
-const DRAFT_URL      = "http://localhost:8787/api/draft-contract";
 const TRANSCRIBE_URL = "http://localhost:8787/api/transcribe";
 
 /* ─── Translations ─── */
 const UI = {
   ar: {
-    title: "المساعد القانوني",
-    brand: "القانون المغربي",
+    title: "عدالة",
+    brand: "adalaapp",
     subtitle: "اطرح سؤالك القانوني واحصل على إجابة دقيقة مستندة إلى التشريع المغربي",
     placeholder: "اكتب سؤالك هنا...",
     send: "إرسال",
@@ -106,16 +105,6 @@ const UI = {
     deadlineStatute: "المرجع القانوني",
     deadlineCases: { criminal_appeal: "استئناف جنائي", cassation: "طعن بالنقض", divorce: "طلاق", custody: "حضانة", inheritance: "تركة / إرث", civil_case: "دعوى مدنية", rental_dispute: "نزاع الكراء" },
     deadlineSteps: { fileAppeal: "تقديم طعن", hearing: "جلسة الاستئناف", decision: "صدور القرار", fileCassation: "تقديم طعن بالنقض", review: "مراجعة محكمة النقض", judgment: "صدور الحكم النهائي", summons: "استدعاء الطرف الآخر", reconciliation: "محاولة الإصلاح", register: "تسجيل لدى الحالة المدنية", deliberation: "مداولة القاضي", registerDeath: "تسجيل رسم الوفاة", fileClaim: "تقديم مطالبة الإرث", distribution: "توزيع التركة", notice: "إشعار الإخلاء", execute: "تنفيذ الحكم" },
-    contractTab: "صياغة العقود",
-    contractTitle: "مُولِّد العقود القانونية",
-    contractDesc: "أدخل بيانات العقد واحصل على مسودة قانونية جاهزة مستندة إلى القانون المغربي",
-    contractTypeLabel: "نوع العقد",
-    contractTypes: { marriage: "عقد الزواج", lease: "عقد الكراء", sale: "عقد البيع" },
-    contractBtn: "أنشئ العقد",
-    contractGenerating: "جاري صياغة العقد...",
-    contractCopy: "نسخ العقد",
-    contractReset: "عقد جديد",
-    contractDisclaimer: "هذه المسودة تحتاج مراجعة محامٍ قبل الاستخدام الرسمي.",
     voiceListen: "انقر للتحدث",
     voiceStop: "إيقاف",
     voicePermissionDenied: "يجب السماح بالوصول إلى الميكروفون من إعدادات المتصفح",
@@ -128,8 +117,8 @@ const UI = {
     followUpTitle: "أسئلة متعلقة",
   },
   fr: {
-    title: "Assistant Juridique",
-    brand: "Droit Marocain",
+    title: "adalaapp",
+    brand: "adalaapp",
     subtitle: "Posez votre question et obtenez une réponse précise basée sur la législation marocaine",
     placeholder: "Écrivez votre question...",
     send: "Envoyer",
@@ -224,16 +213,6 @@ const UI = {
     deadlineStatute: "Référence légale",
     deadlineCases: { criminal_appeal: "Appel pénal", cassation: "Pourvoi en cassation", divorce: "Divorce", custody: "Garde d'enfant", inheritance: "Succession", civil_case: "Affaire civile", rental_dispute: "Litige locatif" },
     deadlineSteps: { fileAppeal: "Dépôt de l'appel", hearing: "Audience d'appel", decision: "Rendu de décision", fileCassation: "Dépôt du pourvoi", review: "Examen par la Cour", judgment: "Arrêt définitif", summons: "Convocation de l'autre partie", reconciliation: "Tentative de réconciliation", register: "Enregistrement à l'état civil", deliberation: "Délibération du juge", registerDeath: "Enregistrement du décès", fileClaim: "Demande de succession", distribution: "Partage de succession", notice: "Préavis d'expulsion", execute: "Exécution du jugement" },
-    contractTab: "Rédaction de contrats",
-    contractTitle: "Générateur de Contrats Juridiques",
-    contractDesc: "Saisissez les données du contrat et obtenez un projet juridique basé sur le droit marocain",
-    contractTypeLabel: "Type de contrat",
-    contractTypes: { marriage: "Contrat de mariage", lease: "Contrat de bail", sale: "Contrat de vente" },
-    contractBtn: "Générer le contrat",
-    contractGenerating: "Rédaction en cours...",
-    contractCopy: "Copier le contrat",
-    contractReset: "Nouveau contrat",
-    contractDisclaimer: "Ce projet nécessite la révision d'un avocat avant toute utilisation officielle.",
     voiceListen: "Parlez maintenant",
     voiceStop: "Arrêter",
     voicePermissionDenied: "Autorisez l'accès au microphone dans les paramètres du navigateur",
@@ -246,8 +225,8 @@ const UI = {
     followUpTitle: "Questions connexes",
   },
   en: {
-    title: "Legal Assistant",
-    brand: "Moroccan Law",
+    title: "adalaapp",
+    brand: "adalaapp",
     subtitle: "Ask your question and get a precise answer grounded in Moroccan legislation",
     placeholder: "Write your question...",
     send: "Send",
@@ -342,16 +321,6 @@ const UI = {
     deadlineStatute: "Legal reference",
     deadlineCases: { criminal_appeal: "Criminal appeal", cassation: "Cassation appeal", divorce: "Divorce", custody: "Child custody", inheritance: "Inheritance / Estate", civil_case: "Civil case", rental_dispute: "Rental dispute" },
     deadlineSteps: { fileAppeal: "File appeal", hearing: "Appeal hearing", decision: "Decision issued", fileCassation: "File cassation", review: "Court review", judgment: "Final judgment", summons: "Summon other party", reconciliation: "Reconciliation attempt", register: "Register with civil status", deliberation: "Judge deliberation", registerDeath: "Register death certificate", fileClaim: "File inheritance claim", distribution: "Estate distribution", notice: "Eviction notice", execute: "Execute judgment" },
-    contractTab: "Contract Drafting",
-    contractTitle: "Legal Contract Generator",
-    contractDesc: "Enter the contract details and get a ready-to-review legal draft based on Moroccan law",
-    contractTypeLabel: "Contract type",
-    contractTypes: { marriage: "Marriage contract", lease: "Lease agreement", sale: "Sale contract" },
-    contractBtn: "Generate contract",
-    contractGenerating: "Drafting contract...",
-    contractCopy: "Copy contract",
-    contractReset: "New contract",
-    contractDisclaimer: "This draft requires attorney review before official use.",
     voiceListen: "Click to speak",
     voiceStop: "Stop",
     voicePermissionDenied: "Allow microphone access in browser settings",
@@ -364,8 +333,8 @@ const UI = {
     followUpTitle: "Related questions",
   },
   dar: {
-    title: "المساعد القانوني",
-    brand: "القانون المغربي",
+    title: "عدالة",
+    brand: "adalaapp",
     subtitle: "سقسي سؤالك القانوني وتجيب جواب واضح من القانون المغربي",
     placeholder: "كتب سؤالك هنا...",
     send: "بعث",
@@ -460,16 +429,6 @@ const UI = {
     deadlineStatute: "المرجع القانوني",
     deadlineCases: { criminal_appeal: "استئناف جنائي", cassation: "طعن بالنقض", divorce: "الطلاق", custody: "الحضانة", inheritance: "التركة / الإرث", civil_case: "دعوى مدنية", rental_dispute: "نزاع الكراء" },
     deadlineSteps: { fileAppeal: "تقديم الطعن", hearing: "جلسة الاستئناف", decision: "صدور القرار", fileCassation: "تقديم طعن بالنقض", review: "مراجعة محكمة النقض", judgment: "الحكم النهائي", summons: "استدعاء الطرف الآخر", reconciliation: "محاولة الإصلاح", register: "تسجيل الحالة المدنية", deliberation: "مداولة القاضي", registerDeath: "تسجيل شهادة الوفاة", fileClaim: "تقديم مطالبة الإرث", distribution: "توزيع التركة", notice: "إشعار الإخلاء", execute: "تنفيذ الحكم" },
-    contractTab: "صياغة العقود",
-    contractTitle: "مولد العقود القانونية",
-    contractDesc: "دخل بيانات العقد وتجيب مسودة قانونية حسب القانون المغربي",
-    contractTypeLabel: "نوع العقد",
-    contractTypes: { marriage: "عقد الزواج", lease: "عقد الكراء", sale: "عقد البيع" },
-    contractBtn: "أنشئ العقد",
-    contractGenerating: "راه كنصيغ العقد...",
-    contractCopy: "نسخ العقد",
-    contractReset: "عقد جديد",
-    contractDisclaimer: "هاد المسودة خاصها مراجعة محامي قبل الاستخدام الرسمي.",
     voiceListen: "نقر باش تتكلم",
     voiceStop: "قف",
     voicePermissionDenied: "خاصك تسمح للمتصفح يوصل للميكروفون",
@@ -649,35 +608,7 @@ const E = "cubic-bezier(0.4,0,0.2,1)";
 const F = '"Josefin Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
 const FA = '"Cairo",-apple-system,BlinkMacSystemFont,sans-serif';
 
-/* ─── Contract Field Definitions ─── */
-const CONTRACT_FIELDS = {
-  marriage: [
-    { id: "groom",      label: { ar: "اسم العريس",       dar: "اسم العريس",       fr: "Nom du marié",        en: "Groom name" },          type: "text" },
-    { id: "bride",      label: { ar: "اسم العروس",        dar: "اسم العروس",        fr: "Nom de la mariée",    en: "Bride name" },          type: "text" },
-    { id: "mahr",       label: { ar: "مبلغ الصداق (DH)", dar: "مبلغ الصداق (درهم)", fr: "Montant du sadaq",    en: "Mahr amount (DH)" },    type: "number" },
-    { id: "witness1",   label: { ar: "الشاهد الأول",      dar: "الشاهد الأول",      fr: "Témoin 1",            en: "Witness 1" },           type: "text" },
-    { id: "witness2",   label: { ar: "الشاهد الثاني",     dar: "الشاهد الثاني",     fr: "Témoin 2",            en: "Witness 2" },           type: "text" },
-    { id: "date",       label: { ar: "تاريخ الزواج",      dar: "تاريخ الزواج",      fr: "Date du mariage",     en: "Marriage date" },       type: "date" },
-    { id: "conditions", label: { ar: "شروط خاصة",         dar: "شروط خاصة",         fr: "Conditions spéciales",en: "Special conditions" }, type: "textarea" },
-  ],
-  lease: [
-    { id: "landlord",  label: { ar: "اسم المكري",         dar: "اسم المكري",         fr: "Nom du bailleur",     en: "Landlord name" },       type: "text" },
-    { id: "tenant",    label: { ar: "اسم المكتري",        dar: "اسم المكتري",        fr: "Nom du locataire",    en: "Tenant name" },         type: "text" },
-    { id: "address",   label: { ar: "عنوان العقار",       dar: "عنوان العقار",       fr: "Adresse du bien",     en: "Property address" },    type: "textarea" },
-    { id: "rent",      label: { ar: "الكراء الشهري (DH)", dar: "الكراء الشهري (درهم)", fr: "Loyer mensuel (DH)",  en: "Monthly rent (DH)" },   type: "number" },
-    { id: "duration",  label: { ar: "مدة العقد (أشهر)",  dar: "مدة العقد (شهر)",  fr: "Durée (mois)",        en: "Duration (months)" },   type: "number" },
-    { id: "deposit",   label: { ar: "التأمين (DH)",       dar: "التأمين (درهم)",       fr: "Dépôt de garantie",   en: "Deposit (DH)" },        type: "number" },
-    { id: "startDate", label: { ar: "تاريخ البداية",      dar: "تاريخ البداية",      fr: "Date de début",       en: "Start date" },          type: "date" },
-  ],
-  sale: [
-    { id: "seller",   label: { ar: "اسم البائع",          dar: "اسم البائع",          fr: "Nom du vendeur",      en: "Seller name" },         type: "text" },
-    { id: "buyer",    label: { ar: "اسم المشتري",         dar: "اسم المشتري",         fr: "Nom de l'acheteur",   en: "Buyer name" },          type: "text" },
-    { id: "item",     label: { ar: "وصف المبيع",          dar: "وصف المبيع",          fr: "Description du bien", en: "Item description" },    type: "textarea" },
-    { id: "price",    label: { ar: "الثمن (DH)",          dar: "الثمن (درهم)",          fr: "Prix (DH)",           en: "Price (DH)" },          type: "number" },
-    { id: "payment",  label: { ar: "طريقة الأداء",        dar: "طريقة الأداء",        fr: "Mode de paiement",    en: "Payment method" },      type: "text" },
-    { id: "delivery", label: { ar: "تاريخ التسليم",       dar: "تاريخ التسليم",       fr: "Date de livraison",   en: "Delivery date" },       type: "date" },
-  ],
-};
+
 
 export default function MoroccanLawQA() {
   const [language, setLanguage] = useState("ar");
@@ -717,11 +648,6 @@ export default function MoroccanLawQA() {
   const [deadlineDate, setDeadlineDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [deadlineCaseType, setDeadlineCaseType] = useState("");
   const [deadlineResult, setDeadlineResult] = useState(null);
-  // Contract drafting
-  const [contractType, setContractType] = useState("marriage");
-  const [contractParams, setContractParams] = useState({});
-  const [contractResult, setContractResult] = useState("");
-  const [contractLoading, setContractLoading] = useState(false);
   const endRef = useRef(null);
   const fileRef = useRef(null);
 
@@ -926,26 +852,6 @@ export default function MoroccanLawQA() {
   }
 
   /* ── Contract Drafting ── */
-  async function draftContract() {
-    if (contractLoading) return;
-    setContractResult("");
-    setContractLoading(true);
-    try {
-      const res = await fetch(DRAFT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contractType, params: contractParams, language }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Draft failed");
-      setContractResult(d.contract);
-    } catch (err) {
-      setContractResult(err.message || "Error generating contract.");
-    } finally {
-      setContractLoading(false);
-    }
-  }
-
   /* ── Document processing ── */
   function getTesseractLang() {
     return (language === "ar" || language === "dar") ? "ara" : language === "fr" ? "fra" : "eng";
@@ -1505,9 +1411,10 @@ export default function MoroccanLawQA() {
     </svg>
   );
 
-  const ScaleIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3v18M3 7l3-4 3 4M15 7l3-4 3 4" /><path d="M3 7c0 3 3 5 3 5s3-2 3-5M15 7c0 3 3 5 3 5s3-2 3-5" />
+  const AdalaLogo = () => (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="16,2 30,9 30,23 16,30 2,23 2,9" fill={`${P.gold}18`} stroke={P.gold} strokeWidth="1.5"/>
+      <path d="M16 8 L11 22 M16 8 L21 22 M12.5 17 L19.5 17" stroke={P.gold} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 
@@ -1537,8 +1444,8 @@ export default function MoroccanLawQA() {
         borderBottom: `1px solid ${P.border}`,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <ScaleIcon />
-          <span style={{ fontSize: 17, fontWeight: 600, color: P.gold, letterSpacing: "0.3px" }}>{t.brand}</span>
+          <AdalaLogo />
+          <span style={{ fontSize: 18, fontWeight: 700, color: P.gold, letterSpacing: "0.5px", fontFamily: F }}>adalaapp</span>
         </div>
         {/* Mode toggle */}
         <div style={{ display: "flex", gap: 4, background: P.bgInput, borderRadius: 10, padding: 3 }}>
@@ -1548,7 +1455,6 @@ export default function MoroccanLawQA() {
             { m: "learn",    l: t.learnTab },
             { m: "sentence", l: t.sentenceTab },
             { m: "deadline", l: t.deadlineTab },
-            { m: "contract", l: t.contractTab },
           ].map(({ m, l }) => {
             const on = mode === m;
             return (
@@ -2025,68 +1931,6 @@ export default function MoroccanLawQA() {
                 <button onClick={calcDeadlines} disabled={!deadlineCaseType}
                   style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: deadlineCaseType ? P.gold : P.bgHover, color: deadlineCaseType ? P.bg : P.textDim, border: "none", borderRadius: 12, cursor: deadlineCaseType ? "pointer" : "not-allowed", transition: `all 250ms ${E}` }}
                 >{t.deadlineBtn}</button>
-              </div>
-            )}
-          </div>
-        ) : mode === "contract" ? (
-          /* ── Contract Drafting View ── */
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
-            {contractResult ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 10 }}>
-                  <span style={{ fontSize: 13, color: P.text, fontFamily: ff, flex: 1 }}>{t.contractTypes[contractType]}</span>
-                  <button onClick={() => copyToClipboard(contractResult, "contract")} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, background: "transparent", color: copiedId === "contract" ? P.gold : P.textDim, border: `1px solid ${copiedId === "contract" ? P.gold + "40" : P.border}`, borderRadius: 6, cursor: "pointer", fontFamily: ff }}>{copiedId === "contract" ? t.copied : t.contractCopy}</button>
-                  <button onClick={() => setContractResult("")} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, background: "transparent", color: P.gold, border: `1px solid ${P.gold}40`, borderRadius: 6, cursor: "pointer", fontFamily: ff }}>{t.contractReset}</button>
-                </div>
-                <div style={{ background: P.bgCard, border: `1px solid ${P.gold}30`, borderRadius: 12, padding: 20, fontSize: 13, lineHeight: 2, color: P.textMid, whiteSpace: "pre-wrap", fontFamily: ff, direction: "ltr", maxHeight: "60vh", overflowY: "auto" }}>{contractResult}</div>
-                <p style={{ fontSize: 11, color: P.textDim, textAlign: "center" }}>{t.contractDisclaimer}</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ width: 52, height: 52, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg,${P.gold}18,${P.gold}08)`, border: `1px solid ${P.gold}30`, borderRadius: 14 }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                  </div>
-                  <h2 style={{ fontSize: rtl ? 22 : 24, fontWeight: 700, margin: "0 0 8px", color: P.text, fontFamily: ff }}>{t.contractTitle}</h2>
-                  <p style={{ fontSize: 14, color: P.textMid, maxWidth: 440, margin: "0 auto", lineHeight: 1.65 }}>{t.contractDesc}</p>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.contractTypeLabel}</span>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {Object.entries(t.contractTypes).map(([k, v]) => {
-                      const active = contractType === k;
-                      return (
-                        <button key={k} onClick={() => { setContractType(k); setContractParams({}); }}
-                          style={{ padding: "8px 20px", fontSize: 13, fontWeight: 600, fontFamily: ff, background: active ? P.gold : P.bgCard, color: active ? P.bg : P.textDim, border: `1px solid ${active ? P.gold : P.border}`, borderRadius: 8, cursor: "pointer", transition: `all 200ms ${E}` }}
-                        >{v}</button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 12 }}>
-                  {(CONTRACT_FIELDS[contractType] || []).map(field => (
-                    <div key={field.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: P.textDim, textTransform: "uppercase", letterSpacing: "0.07em" }}>{field.label[language]}</label>
-                      {field.type === "textarea" ? (
-                        <textarea value={contractParams[field.id] || ""} onChange={e => setContractParams(p => ({ ...p, [field.id]: e.target.value }))}
-                          rows={3} style={{ padding: "10px 14px", fontSize: 13, fontFamily: ff, color: P.text, background: P.bgInput, border: `1px solid ${P.border}`, borderRadius: 10, outline: "none", resize: "vertical", direction: rtl ? "rtl" : "ltr", transition: `all 200ms ${E}` }}
-                          onFocus={e => { e.currentTarget.style.borderColor = P.goldMuted; }} onBlur={e => { e.currentTarget.style.borderColor = P.border; }}
-                        />
-                      ) : (
-                        <input type={field.type} value={contractParams[field.id] || ""} onChange={e => setContractParams(p => ({ ...p, [field.id]: e.target.value }))}
-                          style={{ height: 44, padding: "0 14px", fontSize: 13, fontFamily: ff, color: P.text, background: P.bgInput, border: `1px solid ${P.border}`, borderRadius: 10, outline: "none", direction: field.type === "date" ? "ltr" : (rtl ? "rtl" : "ltr"), transition: `all 200ms ${E}`, colorScheme: "dark" }}
-                          onFocus={e => { e.currentTarget.style.borderColor = P.goldMuted; }} onBlur={e => { e.currentTarget.style.borderColor = P.border; }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <button onClick={draftContract} disabled={contractLoading}
-                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: contractLoading ? P.bgHover : P.gold, color: contractLoading ? P.textDim : P.bg, border: "none", borderRadius: 12, cursor: contractLoading ? "not-allowed" : "pointer", transition: `all 250ms ${E}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-                  {contractLoading ? (
-                    <>{t.contractGenerating}<span style={{ display: "inline-flex", gap: 3 }}>{[0,1,2].map(d => <span key={d} style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", animation: `dots 1.4s infinite ${d*0.2}s` }} />)}</span></>
-                  ) : t.contractBtn}
-                </button>
               </div>
             )}
           </div>
