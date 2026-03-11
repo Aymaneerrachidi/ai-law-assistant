@@ -665,6 +665,13 @@ export default function MoroccanLawQA() {
   const t = UI[language];
   const ff = rtl ? FA : F;
 
+  // Safe fetch helper — always returns parsed JSON; throws with readable message on non-JSON responses
+  async function safeJson(res) {
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch { throw new Error(text.slice(0, 200) || `HTTP ${res.status}`); }
+  }
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -693,7 +700,7 @@ export default function MoroccanLawQA() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: next, language }),
       });
-      const d = await res.json();
+      const d = await safeJson(res);
       const reply = d.content || "No response received.";
       setMessages((p) => [...p, { role: "assistant", content: reply }]);
       // Generate follow-up suggestions in background
@@ -737,7 +744,7 @@ export default function MoroccanLawQA() {
           background: learnBg,
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Explanation failed");
       setLearnResult(data.explanation);
     } catch (err) {
@@ -774,7 +781,7 @@ export default function MoroccanLawQA() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ audio: base64, language, mimeType: mimeType.split(";")[0] }),
               });
-              const d = await res.json();
+              const d = await safeJson(res);
               if (!res.ok) throw new Error(d.error || "Transcription failed");
               if (d.transcript) setInput((prev) => prev ? prev + " " + d.transcript : d.transcript);
             } catch (err) {
@@ -925,7 +932,7 @@ export default function MoroccanLawQA() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: text.slice(0, 8000), language, docType }),
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok) throw new Error(data.error || "Analysis failed");
     return data.analysis;
   }
@@ -936,7 +943,7 @@ export default function MoroccanLawQA() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: text.slice(0, 6000), language }),
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok) throw new Error(data.error || "LLM extraction failed");
     return data;
   }

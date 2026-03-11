@@ -132,7 +132,7 @@ function buildSystemPrompt(language, domain, userText) {
 }
 
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json({ limit: "20mb" }));
 
 app.get("/", (_req, res) => {
   return res.status(200).json({
@@ -645,7 +645,7 @@ app.post("/api/draft-contract", async (req, res) => {
 });
 
 // ── Voice Transcription (Groq primary → HF fallback) ────────────────────────
-app.post("/api/transcribe", express.json({ limit: "15mb" }), async (req, res) => {
+app.post("/api/transcribe", async (req, res) => {
   try {
     const groqKey = process.env.GROQ_API_KEY;
     const hfKey   = process.env.HF_API_KEY;
@@ -718,6 +718,13 @@ app.post("/api/transcribe", express.json({ limit: "15mb" }), async (req, res) =>
 
 app.listen(port, () => {
   console.log(`Moroccan Law QA proxy listening on http://localhost:${port}`);
+});
+
+// Global error handler — always returns JSON
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  console.error("[Global error]", err);
+  res.status(500).json({ error: err.message || "Internal server error" });
 });
 
 export default app;
