@@ -17,6 +17,7 @@ const UI = {
     send: "إرسال",
     thinking: "جاري التحليل...",
     disclaimer: "هذه المعلومات للتوعية القانونية العامة ولا تُغني عن استشارة محامٍ مختص.",
+    govDisclaimer: "⚠️ هذا التطبيق أداة مساعدة للتوعية القانونية فقط، وليس له أي صلة بالحكومة المغربية أو أي جهة رسمية أو جهة قضائية. المعلومات المقدمة لا تُعدّ استشارة قانونية رسمية.",
     quickTitle: "اختر سؤالاً للبدء",
     domainsTitle: "التخصصات",
     chatTab: "محادثة",
@@ -134,6 +135,7 @@ const UI = {
     send: "Envoyer",
     thinking: "Analyse en cours...",
     disclaimer: "Informations à titre éducatif uniquement — consultez un avocat pour un conseil personnalisé.",
+    govDisclaimer: "⚠️ Cette application est un outil d'aide à la sensibilisation juridique uniquement. Elle n'a aucun lien avec le gouvernement marocain, aucune autorité officielle ou institution judiciaire. Les informations fournies ne constituent pas un avis juridique officiel.",
     quickTitle: "Commencez par une question",
     domainsTitle: "Spécialisations",
     chatTab: "Chat",
@@ -251,6 +253,7 @@ const UI = {
     send: "Send",
     thinking: "Analyzing...",
     disclaimer: "For educational purposes only — consult a licensed attorney for case-specific advice.",
+    govDisclaimer: "⚠️ This app is an independent legal awareness tool only. It has no affiliation with the Moroccan government, any official authority, or judicial institution. Nothing here constitutes official legal advice.",
     quickTitle: "Start with a question",
     domainsTitle: "Specializations",
     chatTab: "Chat",
@@ -368,6 +371,7 @@ const UI = {
     send: "بعث",
     thinking: "راه كنشتغل...",
     disclaimer: "هاد المعلومات للتوعية القانونية فقط — خاصك تستشير محامي متخصص.",
+    govDisclaimer: "⚠️ هاد التطبيق مجرد أداة للمساعدة في التوعية القانونية، وما عندوش أي علاقة بالحكومة المغربية ولا بأي جهة رسمية أو قضائية. المعلومات لي كتلقاو هنا ماشي استشارة قانونية رسمية.",
     quickTitle: "اختار سؤال تبدأ بيه",
     domainsTitle: "التخصصات",
     chatTab: "المحادثة",
@@ -1509,6 +1513,20 @@ export default function MoroccanLawQA() {
 
   return (
     <div style={{ minHeight: "100vh", background: P.bg, color: P.text, fontFamily: ff, direction: rtl ? "rtl" : "ltr", display: "flex", flexDirection: "column" }}>
+
+      {/* ── Government Disclaimer Banner ── */}
+      <div style={{
+        background: "#1a1000",
+        borderBottom: `1px solid ${P.gold}40`,
+        padding: "10px 32px",
+        textAlign: "center",
+        fontSize: 12,
+        color: P.gold,
+        lineHeight: 1.5,
+        fontFamily: ff,
+      }}>
+        {t.govDisclaimer}
+      </div>
 
       {/* ── Header ── */}
       <header style={{
