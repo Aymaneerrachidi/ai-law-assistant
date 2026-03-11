@@ -67,6 +67,25 @@ Always end with a natural legal-responsibility sentence without symbols.
 
 Default responsibility sentence:
 This information is educational and not a substitute for formal legal advice; for case-specific guidance, consult a qualified Moroccan lawyer.`,
+  dar: `أنت مساعد قانوني مغربي متخصص في القانون المغربي، وكتجاوب بالدارجة المغربية بشكل طبيعي وواضح.
+
+القاعدة الأولى: دايماً كتجاوب بالدارجة المغربية، مهما كانت لغة السؤال.
+القاعدة الثانية: كتستعمل كلمات دارجة طبيعية: واش، شنو، كيفاش، علاش، شحال، دابا، خلاص، بزاف، شوية، تمام.
+القاعدة الثالثة: ما كتستعملش تنسيق markdown ولا قوائم ولا رموز زخرفية.
+القاعدة الرابعة: كتكتب في فقرات طبيعية متدفقة.
+
+نطاق المعرفة: مدونة الأسرة، القانون الجنائي، المسطرة الجنائية، والالتزامات والعقود المغربية.
+كتذكر المواد القانونية بشكل طبيعي داخل الجمل كلما أمكن.
+إذا كان السؤال خارج النطاق، وضح ذلك بإيجاز بالدارجة.
+ما كتساعداش على التحايل على القانون.
+
+شكل الجواب:
+ابدأ بمقدمة قصيرة بالدارجة، بعدين شرح قانوني واضح في فقرات، وختم عملي.
+كتب بنبرة ودية ومهنية باستخدام الدارجة المغربية.
+ختم دايماً بجملة مسؤولية قانونية طبيعية.
+
+جملة المسؤولية الافتراضية:
+هاد المعلومات للتوعية القانونية فقط وما عندهاش قيمة الاستشارة القانونية الرسمية — من الأفضل تستشير محامي مغربي متخصص حسب قضيتك.`,
 };
 
 const DOMAIN_PROMPTS = {
@@ -111,8 +130,8 @@ function detectDomain(text) {
 }
 
 function buildSystemPrompt(language, domain, userText) {
-  const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
-  const primary = PRIMARY_SYSTEM_PROMPTS[lang];
+  const lang = ["ar", "fr", "en", "dar"].includes(language) ? language : "ar";
+  const primary = PRIMARY_SYSTEM_PROMPTS[lang] || PRIMARY_SYSTEM_PROMPTS["ar"];
   const domainPrompt = DOMAIN_PROMPTS[domain] || DOMAIN_PROMPTS.general;
 
   // Inject relevant legal reference data from the knowledge base
@@ -127,6 +146,8 @@ function buildSystemPrompt(language, domain, userText) {
       ? "\n\nRappel impératif: répondez UNIQUEMENT en français, sans aucune exception."
       : lang === "ar"
       ? "\n\nتذكير حتمي: أجب باللغة العربية فقط، دون استثناء."
+      : lang === "dar"
+      ? "\n\nتذكير حتمي: أجب بالدارجة المغربية فقط، باستخدام كلمات مغربية طبيعية."
       : "";
   return `${primary}${legalCtxBlock}\n\nDomain instructions:\n${domainPrompt}${langOverride}`;
 }
@@ -161,7 +182,9 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
 
     const lang = req.body?.language || "ar";
     const lastUserMessage = [...inputMessages].reverse().find((m) => m?.role === "user")?.content || "";
-    const domain = detectDomain(lastUserMessage);
+    // For Darija, use standard Arabic conversion for domain detection if provided by client
+    const textForDomain = (lang === "dar" && req.body?.standardArabic) ? req.body.standardArabic : lastUserMessage;
+    const domain = detectDomain(textForDomain);
     const systemPrompt = buildSystemPrompt(lang, domain, lastUserMessage);
 
     const messages = [

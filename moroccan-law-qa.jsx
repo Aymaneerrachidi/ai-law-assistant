@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import DarijaPhoneticMatcher from "./src/darijaPhoneticMatcher.js";
 
 const BASE = import.meta.env.VITE_API_URL || "";
 const API_URL = `${BASE}/api/moroccan-law-qa`;
@@ -640,6 +641,11 @@ export default function MoroccanLawQA() {
   const [voiceError, setVoiceError] = useState("");
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  // Darija NLP
+  const darijaMatcherRef = useRef(null);
+  const darijaRecogRef = useRef(null);
+  const darijaStandardRef = useRef("");
+  useEffect(() => { darijaMatcherRef.current = new DarijaPhoneticMatcher(); }, []);
   // Follow-up suggestions
   const [followUps, setFollowUps] = useState([]);
   // Sentence estimator
@@ -698,8 +704,13 @@ export default function MoroccanLawQA() {
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next, language }),
+        body: JSON.stringify({
+          messages: next,
+          language,
+          ...(language === "dar" && darijaStandardRef.current ? { standardArabic: darijaStandardRef.current } : {}),
+        }),
       });
+      darijaStandardRef.current = "";
       const d = await safeJson(res);
       const reply = d.content || "No response received.";
       setMessages((p) => [...p, { role: "assistant", content: reply }]);
@@ -754,8 +765,9 @@ export default function MoroccanLawQA() {
     }
   }
 
-  /* ── Voice Input (MediaRecorder + Groq Whisper) ── */
+  /* ── Voice Input (MediaRecorder + Groq Whisper; Web Speech for Darija) ── */
   function startVoice() {
+    if (language === "dar") { startDarijaVoice(); return; }
     if (!navigator.mediaDevices?.getUserMedia) return;
     setVoiceError("");
     navigator.mediaDevices.getUserMedia({ audio: true })
@@ -799,10 +811,109 @@ export default function MoroccanLawQA() {
       .catch(() => setVoiceError(t.voicePermissionDenied));
   }
   function stopVoice() {
+    if (language === "dar") {
+      darijaRecogRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.stop();
     }
     setIsListening(false);
+  }
+
+  function startDarijaVoice() {
+    setVoiceError("");
+    darijaStandardRef.current = "";
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      // Fallback: use Groq transcription
+      startVoiceGroq();
+      return;
+    }
+    const recognition = new SR();
+    recognition.lang = "ar-MA";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 3;
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      const matcher = darijaMatcherRef.current;
+      if (matcher) {
+        const matched = matcher.findClosestMatch(transcript);
+        const converted = matcher.convertToStandardArabic(transcript);
+        darijaStandardRef.current = converted;
+        // Use matched phrase if high-confidence, else raw transcript
+        const finalText = matched || transcript;
+        setInput(prev => prev ? prev + " " + finalText : finalText);
+      } else {
+        setInput(prev => prev ? prev + " " + transcript : transcript);
+      }
+      setIsListening(false);
+    };
+    recognition.onerror = (event) => {
+      const errMap = {
+        "not-allowed": t.voicePermissionDenied,
+        "no-speech": t.voiceNoSpeech,
+        "network": t.voiceNetwork,
+        "audio-capture": t.voiceAudioCapture,
+      };
+      setVoiceError(errMap[event.error] || t.voiceErrorMsg);
+      setIsListening(false);
+    };
+    recognition.onend = () => setIsListening(false);
+    darijaRecogRef.current = recognition;
+    recognition.start();
+  }
+
+  function startVoiceGroq() {
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((stream) => {
+        audioChunksRef.current = [];
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : "audio/ogg";
+        const recorder = new MediaRecorder(stream, { mimeType });
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+        recorder.onstop = () => {
+          stream.getTracks().forEach((tr) => tr.stop());
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64 = reader.result.split(",")[1];
+            setVoiceTranscribing(true);
+            try {
+              const res = await fetch(TRANSCRIBE_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ audio: base64, language, mimeType: mimeType.split(";")[0] }),
+              });
+              const d = await safeJson(res);
+              if (!res.ok) throw new Error(d.error || "Transcription failed");
+              if (d.transcript) {
+                const matcher = darijaMatcherRef.current;
+                if (matcher) {
+                  darijaStandardRef.current = matcher.convertToStandardArabic(d.transcript);
+                }
+                setInput((prev) => prev ? prev + " " + d.transcript : d.transcript);
+              }
+            } catch (err) {
+              setVoiceError(err.message);
+            } finally {
+              setVoiceTranscribing(false);
+            }
+          };
+          reader.readAsDataURL(blob);
+        };
+        mediaRecorderRef.current = recorder;
+        recorder.start();
+        setIsListening(true);
+      })
+      .catch(() => setVoiceError(t.voicePermissionDenied));
   }
 
   /* ── Sentence Range Estimator ── */
