@@ -2,14 +2,16 @@
 # -*- coding: utf-8 -*-
 
 """
-MOROCCAN LEGAL AI - STRICT RAG SYSTEM
-Chunks are REQUIRED input — LLM answers strictly from passages
-Fixed: language detection, legal threshold, law number extraction, reference format
+ENHANCED RAG SYSTEM WITH DETAILED LAW TRACKING
+- Extract law numbers from chunks intelligently
+- Track exact source (law name, article, file)
+- VERY lenient legal question detection (catches all edge cases)
+- Always show where information came from
 """
 
 import json
 import re
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Set
 from pathlib import Path
 import requests
 import os
@@ -17,562 +19,588 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import uvicorn
+from datetime import datetime
 
 load_dotenv()
 
-# ═══════════════════════════════════════════════════════════════════════
-# PART 1: CHUNK SEARCH & RETRIEVAL
-# ═══════════════════════════════════════════════════════════════════════
+# 
+# PART 1: LENIENT LANGUAGE & LEGAL DETECTION
+# 
 
-class ChunksRetriever:
+class VeryLenientLanguageDetector:
     """
-    Smart search through 11,514 extracted legal chunks
-    Uses chunks as references - does NOT expose raw text to user
+    Very lenient language detection + legal question detection
+    If it could possibly be legal, treat it as legal
     """
+    
+    @staticmethod
+    def detect_language(text: str) -> str:
+        """Detect language"""
+        text_sample = text[:300].lower()
+        
+        arabic_chars = len(re.findall(r'[\u0600-\u06FF]', text))
+        latin_chars = len(re.findall(r'[a-zàâäéèêëïîôöœçüû]', text_sample))
+        
+        if arabic_chars > latin_chars * 1.5:
+            if any(marker in text for marker in ['شنو', 'كيفاش', 'واش', 'غادي', 'ديال']):
+                return 'darija'
+            return 'ar'
+        elif latin_chars > 0:
+            if any(fr in text_sample for fr in ['comment', 'pourquoi', 'loi', 'article', 'le ', 'la ', 'et ']):
+                return 'fr'
+            if any(en in text_sample for en in ['what', 'how', 'why', 'law', 'can', 'is ', 'the ']):
+                return 'en'
+            return 'en'
+        else:
+            return 'ar'
+    
+    @staticmethod
+    def is_possibly_legal_related(text: str, detected_lang: str) -> Tuple[bool, float]:
+        """
+        VERY LENIENT - If it COULD be legal, say yes
+        """
+        text_lower = text.lower()
+        confidence = 0.0
+        
+        legal_keywords = {
+            'ar': [
+                'قانون', 'مادة', 'حقوق', 'واجبات', 'عقوبة', 'سجن', 'غرامة',
+                'محكمة', 'قاضي', 'دعوى', 'حكم', 'استئناف', 'زواج', 'طلاق',
+                'سرقة', 'ضرب', 'جريمة', 'عقد', 'ملكية', 'إرث', 'نفقة', 'حضانة',
+                'عمل', 'موظف', 'شغل', 'فصل', 'تعويض', 'التزام', 'عجز',
+                'شرط', 'اتفاق', 'التزمت', 'يلزم', 'يترتب', 'مسؤول', 'مسؤولية',
+                'ضرر', 'خسارة', 'دين', 'استحقاق', 'حساب'
+            ],
+            'darija': [
+                'قانون', 'مادة', 'حقوق', 'واجبات', 'عقوبة', 'سجن', 'غرامة',
+                'محكمة', 'قاضي', 'دعوى', 'زواج', 'طلاق', 'سرقة', 'ضرب',
+                'شنو', 'كيفاش', 'غادي', 'ديال', 'كاين', 'دير', 'حكم', 'استئناف',
+                'حق', 'واجب', 'شرط', 'اتفاق', 'ملزم', 'يتقضي'
+            ],
+            'fr': [
+                'loi', 'article', 'droit', 'obligation', 'peine', 'prison', 'amende',
+                'tribunal', 'juge', 'procès', 'jugement', 'divorce', 'mariage', 'vol',
+                'agression', 'crime', 'délit', 'contrat', 'propriété', 'héritage',
+                'travail', 'licenciement', 'code', 'juridique', 'justice', 'appel',
+                'procédure', 'accusation', 'verdict', 'règlement', 'accord',
+                'obligatoire', 'responsable', 'responsabilité', 'dommage',
+                'préjudice', 'indemnisation', 'recours', 'légal'
+            ],
+            'en': [
+                'law', 'legal', 'article', 'right', 'obligation', 'punishment', 'prison',
+                'fine', 'court', 'judge', 'trial', 'judgment', 'divorce', 'marriage',
+                'theft', 'assault', 'crime', 'felony', 'contract', 'property',
+                'inheritance', 'work', 'employment', 'termination', 'morocco',
+                'moroccan', 'lawsuit', 'appeal', 'criminal', 'civil', 'penalty',
+                'liable', 'liability', 'responsible', 'responsibility', 'damage',
+                'compensation', 'remedy', 'regulation', 'statute', 'legislation'
+            ]
+        }
+        
+        context_words = {
+            'ar': ['هل', 'ما', 'كم', 'أين', 'كيف', 'متى', 'لماذا', 'أنا', 'هو', 'هي'],
+            'darija': ['شنو', 'كيفاش', 'واش', 'علاش', 'فين', 'متى', 'أنا', 'انت'],
+            'fr': ['quoi', 'comment', 'pourquoi', 'quel', 'quelle', 'est', 'peut', 'peut-on', 'dois', 'dois-je'],
+            'en': ['what', 'how', 'why', 'can', 'is', 'do', 'should', 'will', 'when', 'where', 'is it', 'can i']
+        }
+        
+        keywords = legal_keywords.get(detected_lang, legal_keywords['en'])
+        contexts = context_words.get(detected_lang, context_words['en'])
+        
+        for keyword in keywords:
+            if keyword in text_lower:
+                confidence += 0.4
+        
+        for context in contexts:
+            if context in text_lower:
+                confidence += 0.3
+        
+        if '?' in text:
+            confidence += 0.5
+        
+        if re.search(r'\d+', text):
+            confidence += 0.1
+        
+        confidence = min(confidence, 1.0)
+        return confidence > 0.05, confidence
+
+
+# 
+# PART 2: INTELLIGENT LAW TRACKING & SOURCE EXTRACTION
+# 
+
+class LawSourceTracker:
+    """
+    Extract law information from chunks
+    Track: Law Name, Law Number, Article, Source File
+    """
+    
+    @staticmethod
+    def extract_law_info(chunk: Dict) -> Dict:
+        """Extract complete law information from chunk"""
+        law_name = chunk.get('law_name', '').strip()
+        law_number = chunk.get('law_number', '').strip()
+        article_number = chunk.get('struct_madda', '').strip()
+        source_file = chunk.get('source_filename', '').strip()
+        text = chunk.get('text', '')
+        
+        if not law_number:
+            match = re.search(r'\b(\d+\.\d+\.\d+)\b', text)
+            if match:
+                law_number = match.group(1)
+            else:
+                match = re.search(r'\b(\d+\.\d+)\b', text)
+                if match:
+                    law_number = match.group(1)
+        
+        if not article_number:
+            match = re.search(r'المادة\s*(\d+)', text)
+            if match:
+                article_number = f"المادة {match.group(1)}"
+            else:
+                match = re.search(r'Article\s+(\d+)', text, re.IGNORECASE)
+                if match:
+                    article_number = f"Article {match.group(1)}"
+        
+        if not law_name:
+            law_patterns = [
+                (r'(القانون الجنائي|Code Pénal|Penal Code)', 'Penal Code'),
+                (r'(مدونة الأسرة|Code de la Famille|Family Code)', 'Family Code'),
+                (r'(قانون الشغل|Code du Travail|Labor Code)', 'Labor Code'),
+                (r"(قانون التعمير|Code d'Urbanisme|Urbanism Code)", 'Urbanism Code'),
+            ]
+            for pattern, fallback in law_patterns:
+                if re.search(pattern, text):
+                    law_name = fallback
+                    break
+        
+        return {
+            'law_name': law_name if law_name else 'Unknown Law',
+            'law_number': law_number if law_number else 'Not Available',
+            'article_number': article_number if article_number else 'Not Specified',
+            'source_file': source_file if source_file else 'Unknown Source',
+            'bo_number': chunk.get('bo_number', ''),
+            'date': chunk.get('date', '')
+        }
+    
+    @staticmethod
+    def build_sources_section(chunks: List[Dict]) -> Tuple[str, List[Dict]]:
+        """Build detailed sources section. Returns (formatted_section, structured_data)"""
+        sources_data = []
+        seen: Set[tuple] = set()
+        
+        for chunk in chunks:
+            info = LawSourceTracker.extract_law_info(chunk)
+            key = (info['law_number'], info['article_number'])
+            if key not in seen:
+                sources_data.append(info)
+                seen.add(key)
+        
+        section = "=" * 70 + "\n"
+        section += " LEGAL SOURCES & REFERENCES\n"
+        section += "=" * 70 + "\n\n"
+        
+        if not sources_data:
+            section += "No specific law references found.\n"
+            return section, []
+        
+        for idx, source in enumerate(sources_data[:10], 1):
+            section += f"{idx}. LAW: {source['law_name']}\n"
+            if source['law_number'] != 'Not Available':
+                section += f"   Law Number: {source['law_number']}\n"
+            if source['article_number'] != 'Not Specified':
+                section += f"   Article: {source['article_number']}\n"
+            if source['source_file'] != 'Unknown Source':
+                section += f"   Source File: {source['source_file']}\n"
+            if source['bo_number']:
+                section += f"   Bulletin Officiel: {source['bo_number']}\n"
+            if source['date']:
+                section += f"   Date: {source['date']}\n"
+            section += "\n"
+        
+        return section, sources_data
+
+
+# 
+# PART 3: SMART CHUNK RETRIEVAL
+# 
+
+class SmartChunksRetriever:
+    """Retrieve chunks with law tracking"""
     
     def __init__(self, chunks_jsonl_path: str):
         self.chunks = []
-        self.chunk_index = {}
-        self.law_index = {}
-        self.article_index = {}
-        
+        self.law_index: Dict[str, List[int]] = {}
+        self.lang_detector = VeryLenientLanguageDetector()
+        self.law_tracker = LawSourceTracker()
         self.load_chunks(chunks_jsonl_path)
         self.build_indexes()
     
     def load_chunks(self, path: str):
-        """Load all chunks from JSONL file"""
         with open(path, 'r', encoding='utf-8') as f:
             for idx, line in enumerate(f):
                 if line.strip():
-                    chunk = json.loads(line)
-                    chunk['_index'] = idx
-                    self.chunks.append(chunk)
-        
-        print(f"✅ Loaded {len(self.chunks)} legal chunks")
+                    try:
+                        chunk = json.loads(line)
+                        chunk['_index'] = idx
+                        self.chunks.append(chunk)
+                    except Exception:
+                        pass
+        print(f" Loaded {len(self.chunks)} chunks")
     
     def build_indexes(self):
-        """Build fast lookup indexes"""
         for idx, chunk in enumerate(self.chunks):
             law_name = chunk.get('law_name', 'unknown')
             if law_name not in self.law_index:
                 self.law_index[law_name] = []
             self.law_index[law_name].append(idx)
-            
-            madda = chunk.get('struct_madda', '')
-            if madda:
-                if madda not in self.article_index:
-                    self.article_index[madda] = []
-                self.article_index[madda].append(idx)
     
-    def search_by_keywords(self, query: str, top_k: int = 5) -> List[Dict]:
-        """
-        Fast keyword search through all chunks
-        Returns relevant chunk metadata (not the text)
-        """
+    def search_smart(self, query: str, detected_lang: str, top_k: int = 10) -> List[Dict]:
+        """Smart search  article > law name > keyword"""
         query_lower = query.lower()
         results = []
         
+        # 1. Article number search
+        article_match = re.search(r'المادة\s*(\d+)|Article\s+(\d+)', query, re.IGNORECASE)
+        if article_match:
+            article_num = article_match.group(1) or article_match.group(2)
+            for chunk in self.chunks:
+                if (article_num in chunk.get('struct_madda', '') or
+                        f"المادة {article_num}" in chunk.get('text', '')):
+                    results.append(chunk)
+            if results:
+                return results[:top_k]
+        
+        # 2. Law name search
+        for law_name in self.law_index:
+            if law_name and law_name.lower() in query_lower:
+                for idx in self.law_index[law_name]:
+                    results.append(self.chunks[idx])
+                return results[:top_k]
+        
+        # 3. Keyword search
+        scored = []
         for chunk in self.chunks:
             text = chunk.get('text', '').lower()
             heading = chunk.get('heading', '').lower()
-            law_name = chunk.get('law_name', '').lower()
-            madda = chunk.get('struct_madda', '').lower()
-            
+            chunk_law = chunk.get('law_name', '').lower()
             score = 0
-            
+            if query_lower in text:
+                score += text.count(query_lower) * 5
             if query_lower in heading:
                 score += 10
-            if query_lower in law_name:
-                score += 7
-            if query_lower in madda:
+            if query_lower in chunk_law:
                 score += 8
-            if query_lower in text:
-                count = text.count(query_lower)
-                score += min(count, 5)
-            
             for word in query_lower.split():
-                if len(word) > 2:
-                    if word in text:
-                        score += 1
-                    if word in heading:
-                        score += 2
-            
+                if len(word) > 2 and word in text:
+                    score += 1
             if score > 0:
-                results.append({
-                    'chunk': chunk,
-                    'score': score
-                })
+                scored.append((chunk, score))
         
-        results.sort(key=lambda x: x['score'], reverse=True)
-        return [r['chunk'] for r in results[:top_k]]
-    
-    def search_by_article(self, article_num: str) -> List[Dict]:
-        """Search for specific article number"""
-        article_num = str(article_num).strip()
-        results = []
-        
-        for chunk in self.chunks:
-            struct_madda = chunk.get('struct_madda', '')
-            if struct_madda and article_num in str(struct_madda):
-                results.append(chunk)
-            elif f"المادة {article_num}" in chunk.get('text', ''):
-                if chunk not in results:
-                    results.append(chunk)
-            elif f"Article {article_num}" in chunk.get('text', ''):
-                if chunk not in results:
-                    results.append(chunk)
-        
-        return results
-    
-    def search_by_law(self, law_name: str) -> List[Dict]:
-        """Get all chunks from a specific law"""
-        law_name_lower = law_name.lower()
-        results = []
-        
-        for chunk in self.chunks:
-            if chunk.get('law_name', '').lower() == law_name_lower:
-                results.append(chunk)
-        
-        return results
-    
-    def search_smart(self, query: str, top_k: int = 5) -> Tuple[List[Dict], str]:
-        """
-        Intelligent search based on query type
-        Returns: (relevant_chunks, search_type)
-        """
-        query = query.strip()
-        
-        # Check for article number search
-        article_match = re.search(r'المادة\s+(\d+)', query, re.IGNORECASE)
-        if not article_match:
-            article_match = re.search(r'Article\s+(\d+)', query, re.IGNORECASE)
-        
-        if article_match:
-            article_num = article_match.group(1)
-            chunks = self.search_by_article(article_num)
-            return chunks[:top_k], f"article_{article_num}"
-        
-        # Check for law search
-        for law_name in self.law_index.keys():
-            if law_name and law_name.lower() in query.lower():
-                chunks = self.search_by_law(law_name)
-                return chunks[:top_k], f"law_{law_name}"
-        
-        # Default: keyword search
-        chunks = self.search_by_keywords(query, top_k)
-        return chunks, "keyword_search"
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return [r[0] for r in scored[:top_k]]
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# PART 2: LANGUAGE DETECTION & LEGAL QUESTION GUARD
-# ═══════════════════════════════════════════════════════════════════════
+# 
+# PART 4: PROMPTING WITH SOURCE TRACKING
+# 
 
-FRENCH_LEGAL_KEYWORDS = [
-    'loi', 'article', 'droit', 'tribunal', 'juge', 'avocat', 'peine', 'amende',
-    'contrat', 'mariage', 'divorce', 'garde', 'héritage', 'succession', 'vol',
-    'fraude', 'infraction', 'crime', 'plainte', 'procédure', 'appel', 'prison',
-    'condamnation', 'jugement', 'code', 'bail', 'licenciement', 'salarié',
-    'responsabilité', 'dommages', 'propriété', 'hypothèque', 'marque', 'brevet',
-]
+LENIENT_PROMPTS = {
+    'ar': """أنت محام متخصص في القانون المغربي.
 
-ENGLISH_LEGAL_KEYWORDS = [
-    'law', 'legal', 'article', 'right', 'court', 'judge', 'lawyer', 'penalty',
-    'fine', 'contract', 'marriage', 'divorce', 'custody', 'inheritance', 'theft',
-    'fraud', 'crime', 'criminal', 'complaint', 'procedure', 'appeal', 'prison',
-    'conviction', 'judgment', 'code', 'lease', 'dismissal', 'employee',
-    'liability', 'damages', 'property', 'mortgage', 'trademark', 'patent',
-    'sentence', 'offense', 'arrest', 'trial', 'prosecution', 'defendant',
-    'punishment', 'regulation', 'statute', 'rights',
-]
+## تعليمات:
+1. أجب على السؤال بناء على المقاطع المعطاة
+2. إذا وجدت معلومات = أجب كاملة
+3. إذا لم تجد معلومات دقيقة = قل ما لديك
+4. لا تقل أبدا أن هذا ليس سؤال قانوني
 
-ARABIC_LEGAL_KEYWORDS = [
-    'قانون', 'مادة', 'حق', 'محكمة', 'قاضي', 'محامي', 'عقوبة', 'غرامة',
-    'عقد', 'زواج', 'طلاق', 'حضانة', 'إرث', 'سرقة', 'احتيال', 'جريمة',
-    'شكوى', 'مسطرة', 'استئناف', 'سجن', 'حكم', 'تقادم', 'شغل', 'فصل',
-    'تعويض', 'ملكية', 'رهن', 'علامة', 'براءة', 'بيانات', 'بيئة',
-]
+الآن أجب:""",
+    'darija': """أنت محام متخصص في القانون المغربي.
 
-def detect_language(text: str) -> str:
-    """Detect question language using keyword scoring."""
-    sample = text.lower()
-    fr_score = sum(1 for kw in FRENCH_LEGAL_KEYWORDS if kw in sample)
-    en_score = sum(1 for kw in ENGLISH_LEGAL_KEYWORDS if kw in sample)
-    ar_score = sum(1 for kw in ARABIC_LEGAL_KEYWORDS if kw in sample)
-    # Arabic script presence is a strong signal
-    arabic_chars = sum(1 for c in text if '\u0600' <= c <= '\u06ff')
-    if arabic_chars > len(text) * 0.2:
-        return 'ar'
-    if fr_score > en_score:
-        return 'fr'
-    if en_score > 0:
-        return 'en'
-    return 'ar'  # default
+## تعليمات:
+1. جاوب من المقاطع
+2. إذا حصليت على معلومات = جاوب كامل
+3. إذا ما حصليتش = قول اللي عندك
+4. ما تقول أبدا مشي سؤال قانوني
 
-def is_legal_question(text: str) -> bool:
-    """Return True if the text contains ANY legal keyword (very permissive)."""
-    lower = text.lower()
-    all_keywords = FRENCH_LEGAL_KEYWORDS + ENGLISH_LEGAL_KEYWORDS + ARABIC_LEGAL_KEYWORDS
-    return any(kw in lower for kw in all_keywords)
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# PART 3: REFERENCE EXTRACTOR
-# ═══════════════════════════════════════════════════════════════════════
-
-class ReferenceExtractor:
-    """Extract structured metadata + law numbers from chunks."""
-
-    @staticmethod
-    def extract_law_number(chunk: Dict) -> str:
-        """Multiple fallback methods — guaranteed to never return N/A."""
-        # Try 1: structured field
-        law_num = chunk.get('law_number', '').strip()
-        if law_num:
-            return law_num
-        # Try 2: X.YY.ZZ pattern in text
-        text = chunk.get('text', '')
-        match = re.search(r'\b(\d+\.\d+\.\d+)\b', text)
-        if match:
-            return match.group(1)
-        # Try 3: X.YY pattern in text
-        match = re.search(r'\b(\d+\.\d+)\b', text)
-        if match:
-            return match.group(1)
-        # Try 4: pattern in law name
-        law_name = chunk.get('law_name', '')
-        match = re.search(r'(\d+\.\d+(?:\.\d+)?)', law_name)
-        if match:
-            return match.group(1)
-        return ''
-
-    @staticmethod
-    def extract_reference_data(chunk: Dict) -> Dict:
-        """Extract structured reference info with guaranteed law number."""
-        return {
-            'law_name': chunk.get('law_name', 'Unknown Law'),
-            'law_number': ReferenceExtractor.extract_law_number(chunk),
-            'article_number': chunk.get('struct_madda', ''),
-            'source_file': chunk.get('source_filename', ''),
-            'chunk_index': chunk.get('chunk_index', 0),
-            'language': chunk.get('language_hint', 'ar'),
-        }
-
-    @staticmethod
-    def extract_key_concepts(chunk: Dict) -> List[str]:
-        """Extract legal concepts from chunk text."""
-        text = chunk.get('text', '').lower()
-        concept_map = {
-            'punishment':   ['عقوبة', 'punishment', 'peine'],
-            'imprisonment': ['سجن', 'imprisonment', 'prison'],
-            'fine':         ['غرامة', 'fine', 'amende'],
-            'rights':       ['حقوق', 'rights', 'droits'],
-            'obligations':  ['واجبات', 'obligations'],
-            'contract':     ['عقد', 'contract', 'contrat'],
-            'property':     ['ملكية', 'property', 'propriété'],
-            'marriage':     ['زواج', 'marriage', 'mariage'],
-            'divorce':      ['طلاق', 'divorce'],
-            'custody':      ['حضانة', 'custody', 'garde'],
-            'inheritance':  ['إرث', 'inheritance', 'héritage'],
-            'theft':        ['سرقة', 'theft', 'vol'],
-            'assault':      ['ضرب', 'assault', 'coups'],
-            'fraud':        ['احتيال', 'fraud', 'fraude'],
-            'procedure':    ['إجراء', 'procedure', 'procédure'],
-        }
-        found = []
-        for concept, keywords in concept_map.items():
-            for kw in keywords:
-                if kw in text:
-                    found.append(concept)
-                    break
-        return list(set(found))
-
-    @staticmethod
-    def build_passages_block(chunks: List[Dict]) -> str:
-        """Build the full-text passages block sent to LLM."""
-        if not chunks:
-            return ""
-        lines = []
-        for i, chunk in enumerate(chunks[:5], 1):
-            ref = ReferenceExtractor.extract_reference_data(chunk)
-            text = chunk.get('text', '').strip()
-            lines.append(
-                f"[Passage {i}]\n"
-                f"Law: {ref['law_name']} | Law #: {ref['law_number']} | "
-                f"Article: {ref['article_number']} | Source: {ref['source_file']}\n"
-                f"{text}"
-            )
-        return "\n\n".join(lines)
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# PART 4: STRICT PROMPTING SYSTEM  (full text in, references at end)
-# ═══════════════════════════════════════════════════════════════════════
-
-SYSTEM_PROMPT_TEMPLATE = """You are a strict legal expert specialized in Moroccan law.
-
-Answer ONLY based on the passages provided below. Do NOT add information that is not in the passages.
-If the passages do not contain the answer, say: "The provided legal texts do not contain sufficient information to answer this question."
+جاوب الآن:""",
+    'fr': """Vous êtes avocat spécialisé en droit marocain.
 
 ## Instructions:
-1. Answer in the SAME LANGUAGE as the question.
-2. Keep the answer clear, professional, and directly grounded in the passages.
-3. Cite article numbers and law names naturally in your answer.
-4. After your answer, add a separator line "---" followed by a **Legal References** block.
+1. Répondez selon les passages fournis
+2. Si vous trouvez des informations = répondez complètement
+3. Si vous ne trouvez pas exactement = donnez ce que vous avez
+4. Ne dites JAMAIS "ce n'est pas une question juridique"
 
-## REQUIRED RESPONSE FORMAT:
-[Your answer text]
+Répondez maintenant:""",
+    'en': """You are a lawyer specialized in Moroccan law.
+
+## Instructions:
+1. Answer based on the passages provided
+2. If you find information = answer completely
+3. If you don't find exact info = give what you have
+4. NEVER say "this is not a legal question"
+
+Answer now:"""
+}
+
+
+def build_lenient_prompt(question: str, chunks: List[Dict], detected_lang: str) -> str:
+    """Build prompt with chunks and source tracking"""
+    system = LENIENT_PROMPTS.get(detected_lang, LENIENT_PROMPTS['en'])
+    chunks_section = "\n## LEGAL PASSAGES:\n\n"
+    for i, chunk in enumerate(chunks[:8], 1):
+        law_info = LawSourceTracker.extract_law_info(chunk)
+        text = chunk.get('text', '')[:600]
+        chunks_section += f"""
+[PASSAGE {i}]
+Law: {law_info['law_name']}
+Article: {law_info['article_number']}
+Law #: {law_info['law_number']}
+
+{text}
 
 ---
-**Legal References:**
-- Article: [article number from passages]
-- Law: [law name from passages]
-- Law Number: [law number from passages]
-- Source: [source filename from passages]
+"""
+    return f"""{system}
 
-(Repeat the block for each distinct law cited)
+{chunks_section}
 
-## Legal Passages:
-{passages}
-
-## Question:
+## QUESTION:
 {question}
 
-## Answer:"""
-
-def build_strict_prompt(question: str, chunks: List[Dict]) -> str:
-    """Build a strict prompt that sends full chunk text to the LLM."""
-    passages = ReferenceExtractor.build_passages_block(chunks)
-    return SYSTEM_PROMPT_TEMPLATE.format(passages=passages, question=question)
+## ANSWER:
+"""
 
 
-# ═══════════════════════════════════════════════════════════════════════
-# PART 5: LLM INTEGRATION
-# ═══════════════════════════════════════════════════════════════════════
+# 
+# PART 5: LLM CLIENT
+# 
 
-class LLMClient:
-    """OpenRouter LLM client"""
+class LenientLLMClient:
+    """LLM client"""
     
-    def __init__(self, api_key: str, model: str = "cohere/command-r-plus"):
+    def __init__(self, api_key: str):
         self.api_key = api_key
-        self.model = model
         self.api_url = "https://openrouter.ai/api/v1/chat/completions"
     
-    def call(self, prompt: str, temperature: float = 0.15, max_tokens: int = 1500) -> str:
-        """Call LLM with strict settings."""
-
+    def call(self, prompt: str) -> str:
         if not self.api_key:
             raise ValueError("OPENROUTER_API_KEY not set")
-
+        
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://adalaapp.com",
-            "X-Title": "Adala Legal AI",
+            "X-Title": "Adala Legal AI"
         }
-
+        
         payload = {
-            "model": self.model,
+            "model": os.getenv("OPENROUTER_MODEL", "cohere/command-r-plus"),
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": temperature,
-            "max_tokens": max_tokens,
+            "temperature": 0.2,
+            "max_tokens": 2000
         }
-
+        
         try:
-            response = requests.post(
-                self.api_url,
-                headers=headers,
-                json=payload,
-                timeout=40,
-            )
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=40)
             response.raise_for_status()
-            result = response.json()
-            return result["choices"][0]["message"]["content"]
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"LLM API Error: {str(e)}")
+            return response.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            raise Exception(f"LLM Error: {str(e)}")
 
 
-# ═══════════════════════════════════════════════════════════════════════
+# 
 # PART 6: FASTAPI BACKEND
-# ═══════════════════════════════════════════════════════════════════════
+# 
 
-app = FastAPI(
-    title="Adala Legal AI",
-    description="Moroccan Legal Assistant with Reference-Based RAG",
-    version="1.0"
-)
+app = FastAPI(title="Adala Legal AI - Enhanced with Law Tracking")
 
-# Initialize components
-RETRIEVER = None
-LLM_CLIENT = None
+RETRIEVER: Optional[SmartChunksRetriever] = None
+LLM_CLIENT: Optional[LenientLLMClient] = None
+LANG_DETECTOR: Optional[VeryLenientLanguageDetector] = None
 
 def init_system():
-    """Initialize the system"""
-    global RETRIEVER, LLM_CLIENT
+    global RETRIEVER, LLM_CLIENT, LANG_DETECTOR
+    print("\n Initializing Adala Legal AI (Enhanced Edition)...\n")
     
-    # Load chunks — default to law_chunks.jsonl in the same directory
     chunks_path = os.getenv("CHUNKS_PATH", "law_chunks.jsonl")
     if not Path(chunks_path).exists():
         raise FileNotFoundError(f"Chunks file not found: {chunks_path}")
     
-    RETRIEVER = ChunksRetriever(chunks_path)
+    RETRIEVER = SmartChunksRetriever(chunks_path)
+    LANG_DETECTOR = VeryLenientLanguageDetector()
     
-    # Initialize LLM
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
-        raise ValueError("OPENROUTER_API_KEY environment variable not set")
+        raise ValueError("OPENROUTER_API_KEY not set")
     
-    LLM_CLIENT = LLMClient(api_key)
+    LLM_CLIENT = LenientLLMClient(api_key)
     
-    print("✅ System initialized successfully")
+    print(" System initialized")
+    print(f" Chunks: {len(RETRIEVER.chunks)}")
+    print(f" Laws indexed: {len(RETRIEVER.law_index)}\n")
 
-# Initialize on startup
 try:
     init_system()
 except Exception as e:
-    print(f"⚠️ Warning during initialization: {e}")
+    print(f" Error: {e}")
 
-# ─────────────────────────────────────────────────────────────────────
-# Pydantic Models
-# ─────────────────────────────────────────────────────────────────────
+# 
+# Models
+# 
 
 class QuestionRequest(BaseModel):
     question: str
-    top_k: int = 5
+    language: Optional[str] = None
+    top_k: int = 10
 
-class ReferenceInfo(BaseModel):
+class LawSourceInfo(BaseModel):
     law_name: str
     law_number: str
     article_number: str
     source_file: str
+    bo_number: Optional[str] = None
+    date: Optional[str] = None
 
-class AnswerResponse(BaseModel):
+class DetailedAnswerResponse(BaseModel):
     question: str
     answer: str
-    references: List[ReferenceInfo]
-    search_type: str
-    num_references: int
+    sources: List[LawSourceInfo]
+    detected_language: str
+    possibly_legal: bool
+    legal_confidence: float
+    chunks_used: int
+    timestamp: str
 
-# ─────────────────────────────────────────────────────────────────────
+# 
 # Endpoints
-# ─────────────────────────────────────────────────────────────────────
+# 
 
 @app.get("/health")
 async def health():
-    """System health check"""
     if RETRIEVER is None:
-        return {"status": "initializing"}
-    
+        return {"status": "error"}
     return {
-        "status": "ready",
-        "chunks_loaded": len(RETRIEVER.chunks),
-        "laws_indexed": len(RETRIEVER.law_index),
-        "articles_indexed": len(RETRIEVER.article_index)
+        "status": "ok",
+        "chunks": len(RETRIEVER.chunks),
+        "laws": len(RETRIEVER.law_index),
+        "mode": "Enhanced with Law Tracking"
     }
 
-@app.post("/ask", response_model=AnswerResponse)
-async def ask_legal_question(req: QuestionRequest) -> AnswerResponse:
-    """
-    Main endpoint: Ask a legal question.
-    Chunks are REQUIRED — LLM answers strictly from passages.
-    """
-
-    if not RETRIEVER:
+@app.post("/ask", response_model=DetailedAnswerResponse)
+async def ask_question(req: QuestionRequest) -> DetailedAnswerResponse:
+    """Main endpoint  VERY LENIENT on legal question detection"""
+    
+    if not RETRIEVER or not LLM_CLIENT or not LANG_DETECTOR:
         raise HTTPException(status_code=503, detail="System not initialized")
-
-    question = req.question.strip()
-    if not question:
+    
+    if not req.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty")
-
-    # Search for relevant chunks (required)
-    chunks, search_type = RETRIEVER.search_smart(question, top_k=req.top_k)
-
+    
+    question = req.question.strip()
+    detected_lang = req.language or LANG_DETECTOR.detect_language(question)
+    is_legal, legal_confidence = LANG_DETECTOR.is_possibly_legal_related(question, detected_lang)
+    
+    chunks = RETRIEVER.search_smart(question, detected_lang, top_k=req.top_k)
     if not chunks:
-        raise HTTPException(status_code=404, detail="No relevant laws found in the database for this question")
-
-    # Build strict prompt with FULL chunk text
-    prompt = build_strict_prompt(question, chunks)
-
-    # Get answer from LLM (strict temperature)
+        raise HTTPException(status_code=404, detail="No relevant information found")
+    
+    prompt = build_lenient_prompt(question, chunks, detected_lang)
+    
     try:
         answer = LLM_CLIENT.call(prompt)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating answer: {str(e)}")
-
-    # Prepare structured references for response
-    references = []
-    for chunk in chunks:
-        ref = ReferenceExtractor.extract_reference_data(chunk)
-        references.append(ReferenceInfo(
-            law_name=ref['law_name'],
-            law_number=ref['law_number'],
-            article_number=ref['article_number'],
-            source_file=ref['source_file'],
-        ))
-
-    return AnswerResponse(
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    
+    sources_section, sources_data = LawSourceTracker.build_sources_section(chunks)
+    full_answer = answer + "\n\n" + sources_section
+    
+    sources = [
+        LawSourceInfo(
+            law_name=s['law_name'],
+            law_number=s['law_number'],
+            article_number=s['article_number'],
+            source_file=s['source_file'],
+            bo_number=s.get('bo_number'),
+            date=s.get('date')
+        )
+        for s in sources_data
+    ]
+    
+    return DetailedAnswerResponse(
         question=question,
-        answer=answer,
-        references=references,
-        search_type=search_type,
-        num_references=len(chunks),
+        answer=full_answer,
+        sources=sources,
+        detected_language=detected_lang,
+        possibly_legal=is_legal,
+        legal_confidence=legal_confidence,
+        chunks_used=len(chunks),
+        timestamp=datetime.now().isoformat()
     )
 
 @app.get("/search")
-async def search_laws(q: str, top_k: int = 5):
-    """Search for laws by keyword"""
-    
-    if not RETRIEVER:
+async def search(q: str, language: Optional[str] = None):
+    """Search laws"""
+    if not RETRIEVER or not LANG_DETECTOR:
         raise HTTPException(status_code=503, detail="System not initialized")
     
-    if not q.strip():
-        raise HTTPException(status_code=400, detail="Search query cannot be empty")
-    
-    chunks, search_type = RETRIEVER.search_smart(q, top_k=top_k)
+    detected_lang = language or LANG_DETECTOR.detect_language(q)
+    is_legal, confidence = LANG_DETECTOR.is_possibly_legal_related(q, detected_lang)
+    chunks = RETRIEVER.search_smart(q, detected_lang, top_k=5)
     
     results = []
     for chunk in chunks:
-        ref = ReferenceExtractor.extract_reference_data(chunk)
-        concepts = ReferenceExtractor.extract_key_concepts(chunk)
-        
+        info = LawSourceTracker.extract_law_info(chunk)
         results.append({
-            "law_name": ref['law_name'],
-            "law_number": ref['law_number'],
-            "article_number": ref['article_number'],
-            "source_file": ref['source_file'],
-            "concepts": concepts,
-            "chunk_index": ref['chunk_index']
+            "law_name": info['law_name'],
+            "law_number": info['law_number'],
+            "article": info['article_number'],
+            "source": info['source_file'],
+            "preview": chunk.get('text', '')[:300]
         })
     
     return {
         "query": q,
-        "search_type": search_type,
+        "language": detected_lang,
+        "possibly_legal": is_legal,
+        "confidence": confidence,
         "results": results
     }
 
 @app.get("/stats")
-async def system_stats():
-    """System statistics"""
-    
+async def stats():
     if not RETRIEVER:
         return {"status": "not_initialized"}
-    
     return {
-        "total_chunks": len(RETRIEVER.chunks),
-        "total_laws": len(RETRIEVER.law_index),
-        "total_articles": len(RETRIEVER.article_index),
-        "laws": list(RETRIEVER.law_index.keys())[:20]
+        "chunks": len(RETRIEVER.chunks),
+        "laws": len(RETRIEVER.law_index),
+        "mode": "Enhanced Law Tracking"
     }
 
-# ─────────────────────────────────────────────────────────────────────
+# 
 # Run
-# ─────────────────────────────────────────────────────────────────────
+# 
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
     
-    print(f"🚀 Starting Adala Legal AI on {host}:{port}")
-    print(f"📚 Chunks loaded: {len(RETRIEVER.chunks) if RETRIEVER else 'Not initialized'}")
-    print(f"📖 Laws indexed: {len(RETRIEVER.law_index) if RETRIEVER else 'Not initialized'}")
+    print("""
+
+  ADALA LEGAL AI - ENHANCED WITH LAW TRACKING            
+                                                        
+   Detailed Law Source Tracking                        
+   Extracts: Law Name, Number, Article, Source        
+   VERY Lenient Legal Question Detection              
+   Answers Edge Cases & Related Questions             
+   All 4 Languages Supported                          
+
+    """)
+    
+    print(f" Running on {host}:{port}")
+    if RETRIEVER:
+        print(f" Chunks: {len(RETRIEVER.chunks)}")
+        print(f" Laws: {len(RETRIEVER.law_index)}\n")
     
     uvicorn.run(app, host=host, port=port)
