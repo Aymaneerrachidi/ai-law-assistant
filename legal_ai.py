@@ -508,9 +508,9 @@ class DetailedAnswerResponse(BaseModel):
     question: str
     answer: str
     sources: List[LawSourceInfo]
-    detected_language: str
-    possibly_legal: bool
-    legal_confidence: float
+    language: str
+    is_legal: bool
+    confidence: float
     chunks_used: int
     timestamp: str
 
@@ -529,9 +529,16 @@ async def health():
         "mode": "Enhanced with Law Tracking"
     }
 
+NOT_LEGAL_MESSAGES = {
+    'ar': 'عذراً، هذا السؤال لا يتعلق بالقانون المغربي. يُرجى طرح سؤال قانوني.',
+    'darija': 'سمح ليا، هاد السؤال ما علاقتوش بالقانون المغربي. سول على شي حاجة قانونية.',
+    'fr': 'Désolé, cette question ne concerne pas le droit marocain. Posez une question juridique.',
+    'en': 'Sorry, this question is not about Moroccan law. Please ask a legal question.',
+}
+
 @app.post("/ask", response_model=DetailedAnswerResponse)
 async def ask_question(req: QuestionRequest) -> DetailedAnswerResponse:
-    """Main endpoint  VERY LENIENT on legal question detection"""
+    """Main endpoint — NORMAL threshold (0.3 confidence required)"""
     
     if not RETRIEVER or not LLM_CLIENT or not LANG_DETECTOR:
         raise HTTPException(status_code=503, detail="System not initialized")
@@ -541,7 +548,20 @@ async def ask_question(req: QuestionRequest) -> DetailedAnswerResponse:
     
     question = req.question.strip()
     detected_lang = req.language or LANG_DETECTOR.detect_language(question)
-    is_legal, legal_confidence = LANG_DETECTOR.is_possibly_legal_related(question, detected_lang)
+    is_legal, confidence = LANG_DETECTOR.is_possibly_legal_related(question, detected_lang)
+    
+    # Reject non-legal questions gracefully
+    if not is_legal:
+        return DetailedAnswerResponse(
+            question=question,
+            answer=NOT_LEGAL_MESSAGES.get(detected_lang, NOT_LEGAL_MESSAGES['en']),
+            sources=[],
+            language=detected_lang,
+            is_legal=False,
+            confidence=confidence,
+            chunks_used=0,
+            timestamp=datetime.now().isoformat()
+        )
     
     chunks = RETRIEVER.search_smart(question, detected_lang, top_k=req.top_k)
     if not chunks:
@@ -573,9 +593,9 @@ async def ask_question(req: QuestionRequest) -> DetailedAnswerResponse:
         question=question,
         answer=full_answer,
         sources=sources,
-        detected_language=detected_lang,
-        possibly_legal=is_legal,
-        legal_confidence=legal_confidence,
+        language=detected_lang,
+        is_legal=True,
+        confidence=confidence,
         chunks_used=len(chunks),
         timestamp=datetime.now().isoformat()
     )
@@ -604,7 +624,7 @@ async def search(q: str, language: Optional[str] = None):
     return {
         "query": q,
         "language": detected_lang,
-        "possibly_legal": is_legal,
+        "is_legal": is_legal,
         "confidence": confidence,
         "results": results
     }
