@@ -374,22 +374,7 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
       ...inputMessages.map((m) => ({ role: m.role, content: m.content })),
     ];
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: 2500,
-        temperature: 0.4,
-        top_p: 0.9,
-      }),
-    });
-
-    // ── Fire main answer + follow-up suggestions in parallel ────────────
+    // ── Suggestions fire in background immediately ──────────────────────
     const suggestionsPromise = (async () => {
       try {
         const cohereKey = process.env.COHERE_API_KEY;
@@ -419,6 +404,44 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
       } catch {}
       return [];
     })();
+
+    // ── 1. Python microservice (when PYTHON_SERVICE_URL is set) ─────────
+    if (process.env.PYTHON_SERVICE_URL) {
+      try {
+        const pyBase = process.env.PYTHON_SERVICE_URL.replace(/\/+$/, "");
+        const pyRes = await fetch(`${pyBase}/ask`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: lastUserMessage, top_k: 5 }),
+          signal: AbortSignal.timeout(25000),
+        });
+        if (pyRes.ok) {
+          const pyData = await pyRes.json();
+          if (pyData?.answer) {
+            const suggestions = await suggestionsPromise;
+            return res.json({ content: pyData.answer, suggestions });
+          }
+        }
+      } catch (pyErr) {
+        console.warn("[QA] Python service unavailable, falling back to OpenRouter:", pyErr.message);
+      }
+    }
+
+    // ── 2. OpenRouter ──────────────────────────────────────────────────
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        max_tokens: 2500,
+        temperature: 0.4,
+        top_p: 0.9,
+      }),
+    });
 
     const data = await response.json();
     const message = data?.choices?.[0]?.message;
