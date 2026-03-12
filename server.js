@@ -384,8 +384,7 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
 
     const lang = req.body?.language || "ar";
     const lastUserMessage = [...inputMessages].reverse().find((m) => m?.role === "user")?.content || "";
-    // Log user query (visible in Vercel dashboard → Functions → Logs)
-    console.log(JSON.stringify({ ts: new Date().toISOString(), lang, q: lastUserMessage.slice(0, 300) }));
+    console.log(`[QA] lang=${lang} | q=${lastUserMessage.slice(0, 200)}`);
 
     // ── Off-topic guard ────────────────────────────────────────────────────
     const standardArabicText = req.body?.standardArabic || "";
@@ -459,7 +458,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
           }
         }
       } catch (pyErr) {
-        console.warn("[QA] Python service unavailable, falling back to OpenRouter:", pyErr.message);
+        console.warn(`[QA] Python unavailable → OpenRouter | ${pyErr.message}`);
       }
     }
 
@@ -490,7 +489,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
       lastOrData = data;
 
       if (response.status === 429 || response.status >= 500) {
-        console.warn(`[QA] OpenRouter model ${candidate} unavailable (${response.status}), trying next...`);
+        console.warn(`[QA] ${candidate} → ${response.status}, skip`);
         continue;
       }
 
@@ -498,11 +497,11 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
       const content = message?.content || message?.reasoning || null;
       if (response.ok && content) {
         orContent = content;
-        console.log(`[QA] OpenRouter answered with model: ${candidate}`);
+        console.log(`[QA] answered by ${candidate}`);
         break;
       }
 
-      console.warn(`[QA] OpenRouter model ${candidate} returned no content, trying next...`);
+        console.warn(`[QA] ${candidate} → empty content, skip`);
     }
 
     if (orContent) {
@@ -510,7 +509,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
       return res.json({ content: orContent, suggestions });
     }
 
-    console.warn("[QA] All OpenRouter models exhausted, trying Cohere fallback.", JSON.stringify(lastOrData).slice(0, 200));
+    console.warn(`[QA] all OpenRouter models exhausted → Cohere`);
 
     // ── Fallback: Cohere command-a-03-2025 ────────────────────────────────
     const cohereKey = process.env.COHERE_API_KEY;
@@ -535,9 +534,9 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
           const suggestions = await suggestionsPromise;
           return res.json({ content: fallbackContent, suggestions });
         }
-        console.error("[QA] Cohere fallback also failed:", JSON.stringify(fallbackData).slice(0, 200));
+        console.error(`[QA] Cohere failed | ${JSON.stringify(fallbackData).slice(0, 120)}`);
       } catch (fallbackErr) {
-        console.error("[QA] Cohere fallback fetch error:", fallbackErr.message);
+        console.error(`[QA] Cohere fetch error | ${fallbackErr.message}`);
       }
     }
 
