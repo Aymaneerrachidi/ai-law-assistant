@@ -207,9 +207,25 @@ const OFF_TOPIC_RESPONSES = {
   dar: "سؤالك ماشيش متعلق بالقانون المغربي. أنا مساعد قانوني متخصص فقط في القانون المغربي، وما كنقدرش نجاوب على أسئلة خارج هاد النطاق. إذا عندك سؤال قانوني على القانون المغربي، يسرني نعاونك.",
 };
 
+function normalizeArabic(text) {
+  return (text || "")
+    // Strip diacritics (tashkeel) — U+0610..U+061A, U+064B..U+065F, U+0670
+    .replace(/[\u0610-\u061A\u064B-\u065F\u0670]/g, "")
+    // Normalize all alef variants → plain alef ا
+    .replace(/[أإآٱ]/g, "ا")
+    // Normalize alef maksura → yeh
+    .replace(/ى/g, "ي")
+    // Normalize tah marbuta → heh
+    .replace(/ة/g, "ه")
+    .toLowerCase();
+}
+
+// Pre-normalize keywords once at startup so matching is fast
+const NORMALIZED_LEGAL_KEYWORDS = LEGAL_KEYWORDS.map(normalizeArabic);
+
 function isLegallyRelevant(userText, standardArabic) {
-  const combined = `${userText || ""} ${standardArabic || ""}`.toLowerCase();
-  return LEGAL_KEYWORDS.some((k) => combined.includes(k));
+  const combined = normalizeArabic(`${userText || ""} ${standardArabic || ""}`);
+  return NORMALIZED_LEGAL_KEYWORDS.some((k) => combined.includes(k));
 }
 
 // ── Domain classifier ────────────────────────────────────────────────────────
