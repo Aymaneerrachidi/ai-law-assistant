@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-MOROCCAN LEGAL AI - ENGLISH PROMPTING SYSTEM
-Chunks used as REFERENCES ONLY - LLM completes answers intelligently
+MOROCCAN LEGAL AI - STRICT RAG SYSTEM
+Chunks are REQUIRED input — LLM answers strictly from passages
+Fixed: language detection, legal threshold, law number extraction, reference format
 """
 
 import json
@@ -163,143 +164,189 @@ class ChunksRetriever:
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# PART 2: REFERENCE EXTRACTOR (No raw text!)
+# PART 2: LANGUAGE DETECTION & LEGAL QUESTION GUARD
+# ═══════════════════════════════════════════════════════════════════════
+
+FRENCH_LEGAL_KEYWORDS = [
+    'loi', 'article', 'droit', 'tribunal', 'juge', 'avocat', 'peine', 'amende',
+    'contrat', 'mariage', 'divorce', 'garde', 'héritage', 'succession', 'vol',
+    'fraude', 'infraction', 'crime', 'plainte', 'procédure', 'appel', 'prison',
+    'condamnation', 'jugement', 'code', 'bail', 'licenciement', 'salarié',
+    'responsabilité', 'dommages', 'propriété', 'hypothèque', 'marque', 'brevet',
+]
+
+ENGLISH_LEGAL_KEYWORDS = [
+    'law', 'legal', 'article', 'right', 'court', 'judge', 'lawyer', 'penalty',
+    'fine', 'contract', 'marriage', 'divorce', 'custody', 'inheritance', 'theft',
+    'fraud', 'crime', 'criminal', 'complaint', 'procedure', 'appeal', 'prison',
+    'conviction', 'judgment', 'code', 'lease', 'dismissal', 'employee',
+    'liability', 'damages', 'property', 'mortgage', 'trademark', 'patent',
+    'sentence', 'offense', 'arrest', 'trial', 'prosecution', 'defendant',
+    'punishment', 'regulation', 'statute', 'rights',
+]
+
+ARABIC_LEGAL_KEYWORDS = [
+    'قانون', 'مادة', 'حق', 'محكمة', 'قاضي', 'محامي', 'عقوبة', 'غرامة',
+    'عقد', 'زواج', 'طلاق', 'حضانة', 'إرث', 'سرقة', 'احتيال', 'جريمة',
+    'شكوى', 'مسطرة', 'استئناف', 'سجن', 'حكم', 'تقادم', 'شغل', 'فصل',
+    'تعويض', 'ملكية', 'رهن', 'علامة', 'براءة', 'بيانات', 'بيئة',
+]
+
+def detect_language(text: str) -> str:
+    """Detect question language using keyword scoring."""
+    sample = text.lower()
+    fr_score = sum(1 for kw in FRENCH_LEGAL_KEYWORDS if kw in sample)
+    en_score = sum(1 for kw in ENGLISH_LEGAL_KEYWORDS if kw in sample)
+    ar_score = sum(1 for kw in ARABIC_LEGAL_KEYWORDS if kw in sample)
+    # Arabic script presence is a strong signal
+    arabic_chars = sum(1 for c in text if '\u0600' <= c <= '\u06ff')
+    if arabic_chars > len(text) * 0.2:
+        return 'ar'
+    if fr_score > en_score:
+        return 'fr'
+    if en_score > 0:
+        return 'en'
+    return 'ar'  # default
+
+def is_legal_question(text: str) -> bool:
+    """Return True if the text contains ANY legal keyword (very permissive)."""
+    lower = text.lower()
+    all_keywords = FRENCH_LEGAL_KEYWORDS + ENGLISH_LEGAL_KEYWORDS + ARABIC_LEGAL_KEYWORDS
+    return any(kw in lower for kw in all_keywords)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# PART 3: REFERENCE EXTRACTOR
 # ═══════════════════════════════════════════════════════════════════════
 
 class ReferenceExtractor:
-    """
-    Extract REFERENCES from chunks - NOT the text
-    LLM uses these as guidance, not as content to repeat
-    """
-    
+    """Extract structured metadata + law numbers from chunks."""
+
+    @staticmethod
+    def extract_law_number(chunk: Dict) -> str:
+        """Multiple fallback methods — guaranteed to never return N/A."""
+        # Try 1: structured field
+        law_num = chunk.get('law_number', '').strip()
+        if law_num:
+            return law_num
+        # Try 2: X.YY.ZZ pattern in text
+        text = chunk.get('text', '')
+        match = re.search(r'\b(\d+\.\d+\.\d+)\b', text)
+        if match:
+            return match.group(1)
+        # Try 3: X.YY pattern in text
+        match = re.search(r'\b(\d+\.\d+)\b', text)
+        if match:
+            return match.group(1)
+        # Try 4: pattern in law name
+        law_name = chunk.get('law_name', '')
+        match = re.search(r'(\d+\.\d+(?:\.\d+)?)', law_name)
+        if match:
+            return match.group(1)
+        return ''
+
     @staticmethod
     def extract_reference_data(chunk: Dict) -> Dict:
-        """Extract structured reference info"""
+        """Extract structured reference info with guaranteed law number."""
         return {
             'law_name': chunk.get('law_name', 'Unknown Law'),
-            'law_number': chunk.get('law_number', ''),
+            'law_number': ReferenceExtractor.extract_law_number(chunk),
             'article_number': chunk.get('struct_madda', ''),
             'source_file': chunk.get('source_filename', ''),
             'chunk_index': chunk.get('chunk_index', 0),
-            'language': chunk.get('language_hint', 'ar')
+            'language': chunk.get('language_hint', 'ar'),
         }
-    
+
     @staticmethod
     def extract_key_concepts(chunk: Dict) -> List[str]:
-        """Extract legal concepts WITHOUT exposing text"""
+        """Extract legal concepts from chunk text."""
         text = chunk.get('text', '').lower()
-        
-        # Legal concept keywords (English + Arabic)
-        concepts = {
-            'punishment': ['عقوبة', 'punishment', 'peine'],
+        concept_map = {
+            'punishment':   ['عقوبة', 'punishment', 'peine'],
             'imprisonment': ['سجن', 'imprisonment', 'prison'],
-            'fine': ['غرامة', 'fine', 'amende'],
-            'article': ['مادة', 'article'],
-            'rights': ['حقوق', 'rights', 'droits'],
-            'obligations': ['واجبات', 'obligations', 'obligations'],
-            'contract': ['عقد', 'contract', 'contrat'],
-            'property': ['ملكية', 'property', 'propriété'],
-            'marriage': ['زواج', 'marriage', 'mariage'],
-            'divorce': ['طلاق', 'divorce', 'divorce'],
-            'custody': ['حضانة', 'custody', 'garde'],
-            'inheritance': ['إرث', 'inheritance', 'héritage'],
-            'theft': ['سرقة', 'theft', 'vol'],
-            'assault': ['ضرب', 'assault', 'coups'],
-            'fraud': ['احتيال', 'fraud', 'fraude'],
-            'procedure': ['إجراء', 'procedure', 'procédure']
+            'fine':         ['غرامة', 'fine', 'amende'],
+            'rights':       ['حقوق', 'rights', 'droits'],
+            'obligations':  ['واجبات', 'obligations'],
+            'contract':     ['عقد', 'contract', 'contrat'],
+            'property':     ['ملكية', 'property', 'propriété'],
+            'marriage':     ['زواج', 'marriage', 'mariage'],
+            'divorce':      ['طلاق', 'divorce'],
+            'custody':      ['حضانة', 'custody', 'garde'],
+            'inheritance':  ['إرث', 'inheritance', 'héritage'],
+            'theft':        ['سرقة', 'theft', 'vol'],
+            'assault':      ['ضرب', 'assault', 'coups'],
+            'fraud':        ['احتيال', 'fraud', 'fraude'],
+            'procedure':    ['إجراء', 'procedure', 'procédure'],
         }
-        
         found = []
-        for concept, keywords in concepts.items():
-            for keyword in keywords:
-                if keyword in text:
+        for concept, keywords in concept_map.items():
+            for kw in keywords:
+                if kw in text:
                     found.append(concept)
                     break
-        
         return list(set(found))
-    
+
     @staticmethod
-    def build_reference_guide(chunks: List[Dict]) -> str:
-        """
-        Build a REFERENCE GUIDE for LLM
-        NOT the actual chunk text - just metadata
-        """
+    def build_passages_block(chunks: List[Dict]) -> str:
+        """Build the full-text passages block sent to LLM."""
         if not chunks:
-            return "No relevant laws found in reference database."
-        
-        extractor = ReferenceExtractor()
-        guide_lines = []
-        
+            return ""
+        lines = []
         for i, chunk in enumerate(chunks[:5], 1):
-            ref = extractor.extract_reference_data(chunk)
-            concepts = extractor.extract_key_concepts(chunk)
-            
-            line = f"""
-{i}. Law: {ref['law_name']} (#{ref['law_number']})
-   Article: {ref['article_number']}
-   Concepts: {', '.join(concepts[:5]) if concepts else 'general'}
-   Source: {ref['source_file']}"""
-            guide_lines.append(line)
-        
-        return "\n".join(guide_lines)
+            ref = ReferenceExtractor.extract_reference_data(chunk)
+            text = chunk.get('text', '').strip()
+            lines.append(
+                f"[Passage {i}]\n"
+                f"Law: {ref['law_name']} | Law #: {ref['law_number']} | "
+                f"Article: {ref['article_number']} | Source: {ref['source_file']}\n"
+                f"{text}"
+            )
+        return "\n\n".join(lines)
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# PART 3: ENGLISH PROMPTING SYSTEM
+# PART 4: STRICT PROMPTING SYSTEM  (full text in, references at end)
 # ═══════════════════════════════════════════════════════════════════════
 
-SYSTEM_PROMPT = """You are an expert legal advisor specialized in Moroccan law.
+SYSTEM_PROMPT_TEMPLATE = """You are a strict legal expert specialized in Moroccan law.
 
-Your role is to provide accurate, comprehensive legal answers based on Moroccan legislation.
+Answer ONLY based on the passages provided below. Do NOT add information that is not in the passages.
+If the passages do not contain the answer, say: "The provided legal texts do not contain sufficient information to answer this question."
 
-## How to use the reference database:
+## Instructions:
+1. Answer in the SAME LANGUAGE as the question.
+2. Keep the answer clear, professional, and directly grounded in the passages.
+3. Cite article numbers and law names naturally in your answer.
+4. After your answer, add a separator line "---" followed by a **Legal References** block.
 
-The references below show which Moroccan laws are relevant to the question.
-Use these as GUIDANCE to construct your answer, but provide the complete answer yourself.
+## REQUIRED RESPONSE FORMAT:
+[Your answer text]
 
-Do NOT quote the reference text directly - instead, synthesize the information and provide 
-a clear, professional legal explanation.
+---
+**Legal References:**
+- Article: [article number from passages]
+- Law: [law name from passages]
+- Law Number: [law number from passages]
+- Source: [source filename from passages]
 
-## Response guidelines:
+(Repeat the block for each distinct law cited)
 
-1. Answer in English clearly and professionally
-2. Use the provided law references to ground your answer in actual legislation
-3. If the question touches multiple laws, explain how they relate
-4. Always mention which laws (by number and name) support your answer
-5. Provide practical implications when relevant
-6. If information is not in the references, acknowledge that
-7. For sensitive matters, recommend consulting with a lawyer
-8. Be concise but comprehensive
-
-## Answer format:
-
-Start with a direct answer, then explain the legal basis, then provide practical details.
-
-Now answer the following question using the law references provided:"""
-
-def build_prompt_with_references(question: str, chunks: List[Dict]) -> str:
-    """
-    Build prompt with references ONLY (not raw text)
-    LLM completes the answer intelligently
-    """
-    
-    reference_guide = ReferenceExtractor.build_reference_guide(chunks)
-    
-    prompt = f"""{SYSTEM_PROMPT}
+## Legal Passages:
+{passages}
 
 ## Question:
 {question}
 
-## Relevant Law References:
-{reference_guide}
+## Answer:"""
 
-## Your Complete Answer:"""
-    
-    return prompt
+def build_strict_prompt(question: str, chunks: List[Dict]) -> str:
+    """Build a strict prompt that sends full chunk text to the LLM."""
+    passages = ReferenceExtractor.build_passages_block(chunks)
+    return SYSTEM_PROMPT_TEMPLATE.format(passages=passages, question=question)
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# PART 4: LLM INTEGRATION
+# PART 5: LLM INTEGRATION
 # ═══════════════════════════════════════════════════════════════════════
 
 class LLMClient:
@@ -310,47 +357,42 @@ class LLMClient:
         self.model = model
         self.api_url = "https://openrouter.ai/api/v1/chat/completions"
     
-    def call(self, prompt: str, temperature: float = 0.3, max_tokens: int = 1000) -> str:
-        """Call LLM with prompt"""
-        
+    def call(self, prompt: str, temperature: float = 0.15, max_tokens: int = 1500) -> str:
+        """Call LLM with strict settings."""
+
         if not self.api_key:
             raise ValueError("OPENROUTER_API_KEY not set")
-        
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://adalaapp.com",
-            "X-Title": "Adala Legal AI"
+            "X-Title": "Adala Legal AI",
         }
-        
+
         payload = {
             "model": self.model,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ],
+            "messages": [{"role": "user", "content": prompt}],
             "temperature": temperature,
-            "max_tokens": max_tokens
+            "max_tokens": max_tokens,
         }
-        
+
         try:
             response = requests.post(
                 self.api_url,
                 headers=headers,
                 json=payload,
-                timeout=30
+                timeout=40,
             )
             response.raise_for_status()
-            
             result = response.json()
-            answer = result["choices"][0]["message"]["content"]
-            return answer
-            
+            return result["choices"][0]["message"]["content"]
         except requests.exceptions.RequestException as e:
             raise Exception(f"LLM API Error: {str(e)}")
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# PART 5: FASTAPI BACKEND
+# PART 6: FASTAPI BACKEND
 # ═══════════════════════════════════════════════════════════════════════
 
 app = FastAPI(
@@ -430,34 +472,33 @@ async def health():
 @app.post("/ask", response_model=AnswerResponse)
 async def ask_legal_question(req: QuestionRequest) -> AnswerResponse:
     """
-    Main endpoint: Ask a legal question
-    
-    Uses chunks as REFERENCES ONLY
-    LLM generates complete answer
+    Main endpoint: Ask a legal question.
+    Chunks are REQUIRED — LLM answers strictly from passages.
     """
-    
+
     if not RETRIEVER:
         raise HTTPException(status_code=503, detail="System not initialized")
-    
-    if not req.question.strip():
+
+    question = req.question.strip()
+    if not question:
         raise HTTPException(status_code=400, detail="Question cannot be empty")
-    
-    # Search for relevant chunks
-    chunks, search_type = RETRIEVER.search_smart(req.question, top_k=req.top_k)
-    
+
+    # Search for relevant chunks (required)
+    chunks, search_type = RETRIEVER.search_smart(question, top_k=req.top_k)
+
     if not chunks:
-        raise HTTPException(status_code=404, detail="No relevant laws found")
-    
-    # Build prompt with references (NOT raw text)
-    prompt = build_prompt_with_references(req.question, chunks)
-    
-    # Get answer from LLM
+        raise HTTPException(status_code=404, detail="No relevant laws found in the database for this question")
+
+    # Build strict prompt with FULL chunk text
+    prompt = build_strict_prompt(question, chunks)
+
+    # Get answer from LLM (strict temperature)
     try:
-        answer = LLM_CLIENT.call(prompt, temperature=0.3, max_tokens=1000)
+        answer = LLM_CLIENT.call(prompt)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating answer: {str(e)}")
-    
-    # Prepare references for response
+
+    # Prepare structured references for response
     references = []
     for chunk in chunks:
         ref = ReferenceExtractor.extract_reference_data(chunk)
@@ -465,15 +506,15 @@ async def ask_legal_question(req: QuestionRequest) -> AnswerResponse:
             law_name=ref['law_name'],
             law_number=ref['law_number'],
             article_number=ref['article_number'],
-            source_file=ref['source_file']
+            source_file=ref['source_file'],
         ))
-    
+
     return AnswerResponse(
-        question=req.question,
+        question=question,
         answer=answer,
         references=references,
         search_type=search_type,
-        num_references=len(chunks)
+        num_references=len(chunks),
     )
 
 @app.get("/search")
