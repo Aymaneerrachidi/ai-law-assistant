@@ -223,6 +223,104 @@ const CORPUS = [
     content: "Jnaiya (serious felony): 5–30 years or life/death. Jnha (misdemeanor): 2 months–5 years + fine. Mukhalafa (violation): warning to 3 days custody + fine. Mitigating factors: first offense, young age, cooperation, remorse, repair of harm. Aggravating: premeditation, weapons, multiple victims, organized crime, victim is minor/vulnerable.",
     tags: ["sentencing", "penalty", "sentence", "peine", "condamnation", "عقوبة", "تخفيف", "تشديد", "العقوبة", "أحكام"],
   },
+
+  // ── LABOR CODE ────────────────────────────────────────────
+  {
+    id: "lc-13-16",
+    article: "Arts. 13–16 (Law 65-99)",
+    title: "Employment Contracts",
+    content: "Fixed-term contract: max 1 year renewable once; becomes indefinite if continued beyond maximum (Art. 14). Probation period: 3 months executives, 1.5 months employees, 15 days workers; renewable once (Art. 16). Employment contract may be fixed or indefinite; written form required for fixed-term (Art. 13).",
+    tags: ["employment contract", "fixed term", "probation", "contrat de travail", "CDD", "CDI", "période d'essai", "عقد الشغل", "عقد محدد المدة", "فترة تجربة", "عامل"],
+  },
+  {
+    id: "lc-39-40",
+    article: "Arts. 39–40 (Law 65-99)",
+    title: "Dismissal and Severance Pay",
+    content: "Gross misconduct justifying immediate dismissal includes: violence at work, serious insubordination, theft, absences >4 days/month (Art. 39). Unjustified dismissal (licenciement abusif): employee entitled to notice period, severance pay (1/2 month × years for first 5 years; 2/3 month per year 6–10; 1 month per year after 10), and damages (Art. 40). Dismissal procedure requires prior hearing, written notification with reasons.",
+    tags: ["dismissal", "licenciement", "severance", "abusif", "indemnité", "فصل", "تعويض عن الفصل", "طرد تعسفي", "إشعار"],
+  },
+  {
+    id: "lc-wages",
+    article: "Wages & Working Time (Law 65-99)",
+    title: "Minimum Wage and Working Hours",
+    content: "Maximum working hours: 44 hours/week, 10 hours/day max. Overtime at 125% base wage or 150% on rest days. SMIG (minimum wage) updated by government decree. Employer must pay in national currency. Maternity leave: 14 weeks paid.",
+    tags: ["wage", "salary", "overtime", "working hours", "smig", "salaire minimum", "heures supplémentaires", "أجر", "حد أدنى للأجر", "ساعات العمل", "عمل إضافي"],
+  },
+
+  // ── COMMERCIAL CODE ────────────────────────────────────────
+  {
+    id: "cc-1-3",
+    article: "Arts. 1–3 (Law 15-95)",
+    title: "Commercial Acts and Merchant Status",
+    content: "A commercial act is one performed habitually for profit: purchase-resale, manufacturing, banking, insurance, transport (Art. 1). Merchant: any person habitually performing commercial acts for own benefit (Art. 2). Commercial companies are merchants from registration date (Art. 3). All merchants must register in commercial register within 3 months of starting activity.",
+    tags: ["merchant", "commercial act", "commerçant", "acte de commerce", "registre de commerce", "تاجر", "عمل تجاري", "السجل التجاري"],
+  },
+  {
+    id: "cc-550",
+    article: "Art. 550 (Law 15-95)",
+    title: "Insolvency and Business Rescue",
+    content: "Procedure for companies in financial difficulty: sauvegarde (preventive), redressement judiciaire (reorganization), liquidation judiciaire (judicial liquidation). Liquidator appointed by court; assets sold to pay creditors by priority. Super-privileged claims: wages up to 3 months paid first. Statute of limitations for commercial obligations: 5 years.",
+    tags: ["bankruptcy", "insolvency", "liquidation", "faillite", "sauvegarde", "redressement", "إفلاس", "تصفية قضائية", "إعادة هيكلة", "دائن"],
+  },
+
+  // ── REAL ESTATE ────────────────────────────────────────────
+  {
+    id: "re-registration",
+    article: "Land Registration (Dahir 1913 + Law 39-08)",
+    title: "Property Registration and Titre Foncier",
+    content: "Land registration (immatriculation foncière) gives definitive, unassailable title (titre foncier). Unregistered property (melkia) is less secure. Sale of registered property requires authenticated notarial deed and transfer registered on titre foncier. Transfer tax 4% of sale price. Capital gains tax on resale varies by holding period.",
+    tags: ["land registration", "titre foncier", "immatriculation", "property", "real estate", "notaire", "تحفيظ عقاري", "رسم عقاري", "عقار", "ملكية عقارية", "عقد بيع"],
+  },
+  {
+    id: "re-mortgage",
+    article: "Mortgage & Expropriation (Law 39-08 + Law 7-81)",
+    title: "Mortgage, Expropriation and Co-Ownership",
+    content: "Mortgage on registered property requires notarial deed + registration on titre foncier. First registered mortgage has priority. Foreclosure: judicial sale after notice. Expropriation (Law 7-81): requires declaration of public benefit + prior fair compensation at market value. Horizontal property (Copropriété, Law 18-00): owners' association (syndicat); common areas by qualified majority vote.",
+    tags: ["mortgage", "hypothèque", "expropriation", "copropriété", "rهن", "رهن عقاري", "نزع الملكية", "تعويض", "ملكية مشتركة", "طابق"],
+  },
+
+  // ── INTELLECTUAL PROPERTY ──────────────────────────────────
+  {
+    id: "ip-copyright",
+    article: "Copyright (Law 22-97 / 2000)",
+    title: "Copyright and Author's Rights",
+    content: "Copyright protection automatic from creation — no registration needed. Duration: life + 70 years. Protected works: literary, musical, visual art, film, architecture, software. Moral rights perpetual and inalienable. Infringement: civil damages + criminal fine 10,000–1,000,000 MAD; up to 2 years prison for repeat offenders.",
+    tags: ["copyright", "author", "droits d'auteur", "plagiarism", "intellectual property", "حقوق التأليف", "حقوق النشر", "ملكية فكرية", "قرصنة أدبية", "تقليد"],
+  },
+  {
+    id: "ip-trademark-patent",
+    article: "Trademarks & Patents (Law 22-97)",
+    title: "Trademark, Patent and Industrial Design",
+    content: "Trademark: registration at OMPIC required; 10 years renewable; exclusive use in Morocco. Infringement: 3 months–5 years, 25,000–1,500,000 MAD. Patent: 20 years non-renewable; requires novelty, inventive step, industrial application. Compulsory license if not worked within 3 years. Industrial design: 5 years renewable up to 25 years. Saisie-contrefaçon: court-ordered seizure of infringing goods.",
+    tags: ["trademark", "patent", "marque", "brevet", "contrefaçon", "ompic", "علامة تجارية", "براءة اختراع", "تقليد", "saisie"],
+  },
+
+  // ── DATA PROTECTION ────────────────────────────────────────
+  {
+    id: "dp-09-08",
+    article: "Law 09-08 / 2009",
+    title: "Personal Data Protection",
+    content: "Managed by CNDP. Legal basis for processing: consent, contract, legal obligation, legitimate interest. Data subject rights: access, rectification, object to processing, erasure. Controllers must declare processing to CNDP. Unauthorized processing: 10,000–300,000 MAD, 3 months–3 years imprisonment. Sensitive data (health, religion, ethnicity) processing without authorization: doubled penalties. Transfers abroad require CNDP approval.",
+    tags: ["data protection", "personal data", "privacy", "cndp", "gdpr", "données personnelles", "حماية البيانات", "بيانات شخصية", "خصوصية", "معالجة البيانات"],
+  },
+
+  // ── CYBERCRIME ─────────────────────────────────────────────
+  {
+    id: "cyber-607",
+    article: "Arts. 607-1 to 607-7 Penal Code (Law 07-03)",
+    title: "Cybercrime and Unauthorized Computer Access",
+    content: "Unauthorized access to computer system: 3 months–1 year, 2,000–10,000 MAD (Art. 607-1). Access causing data damage: 1–3 years (Art. 607-2). Preventing/distorting system operation (DoS-type): 2–6 years (Art. 607-3). Introducing false data: 2–6 years (Art. 607-4). Intercepting data transmissions: 1–3 years (Art. 607-5). Electronic signature legally valid under Law 53-05. Online fraud: Art. 450 + cyber element; identity theft: 6 months–3 years.",
+    tags: ["cybercrime", "hacking", "unauthorized access", "phishing", "online fraud", "piratage", "جرائم إلكترونية", "قرصنة", "اختراق", "نصب إلكتروني", "sécurité informatique"],
+  },
+
+  // ── ENVIRONMENTAL LAW ──────────────────────────────────────
+  {
+    id: "env-11-03",
+    article: "Law 11-03 / 2003; Law 12-03; Law 28-00",
+    title: "Environmental Protection and Pollution",
+    content: "Polluter-pays principle and precautionary principle apply. EIA (environmental impact assessment) required for industrial plants, roads, dams. Illegal water discharge: 200,000–2,000,000 MAD fine. Illegal waste dumping: 2,000–50,000 MAD. Hazardous waste illegal disposal: 50,000–500,000 MAD + imprisonment. Protected areas: activities strictly regulated; illegal hunting/fishing: fines + confiscation. Environmental inspectors can inspect premises and issue compliance orders.",
+    tags: ["environment", "pollution", "waste", "eia", "biodiversity", "environnement", "déchets", "polluant", "bيئة", "بيئة", "تلوث", "نفايات", "حماية البيئة", "تقييم الأثر البيئي"],
+  },
 ];
 
 /* ─────────────────────────────────────────────

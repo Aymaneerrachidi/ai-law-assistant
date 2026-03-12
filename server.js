@@ -150,6 +150,13 @@ const DOMAIN_PROMPTS = {
   penal: `For penal-law questions, use the LEGAL REFERENCE DATA provided above to cite exact article numbers and penalty ranges. Identify the offense category (jnaiya / jnha / mukhalafa), cite the applicable article, state the imprisonment range and fine, and describe how aggravating or mitigating circumstances shift the outcome. Keep the explanation neutral, factual, and legal-responsibility-aware.`,
   procedure: `For procedure questions, use the LEGAL REFERENCE DATA to describe the legal path as a coherent narrative: garde à vue limits (Art. 114-115), investigation phase, indictment, trial, appeal timeline (10 days), cassation (10 days from appeals decision), and statute of limitations (Art. 50). Present as flowing prose with clear transitions between phases.`,
   contracts: `For obligations and contracts questions, use the LEGAL REFERENCE DATA to explain formation validity, performance, breach consequences, compensation (Art. 77 DOC), force majeure (Art. 264 DOC), and enforcement mechanisms. Integrate practical risk points and article references naturally without list formatting.`,
+  labor: `For labor-law questions, use the LEGAL REFERENCE DATA to explain employee and employer rights under the Labor Code (Law 65-99). Cite relevant article numbers for contract types (Arts. 13-16), working hours, wages (SMIG), dismissal procedure and severance pay (Arts. 39-40), social security obligations (CNSS), and dispute resolution. Be precise on deadlines and amounts.`,
+  commercial: `For commercial-law questions, use the LEGAL REFERENCE DATA to explain merchant obligations, company formation (SARL/SA/SNC), commercial register requirements, business fund transfers, and insolvency procedures (Law 15-95). Cite relevant articles and explain practical consequences for trading entities.`,
+  realestate: `For real estate questions, use the LEGAL REFERENCE DATA to explain title registration (immatriculation foncière), transfer requirements, mortgage and security rights, expropriation procedure, and co-ownership rules (Laws 39-08, 18-00, 7-81). Clarify the distinction between registered (titre foncier) and unregistered (melkia) property and its legal implications.`,
+  ip: `For intellectual property questions, use the LEGAL REFERENCE DATA to explain copyright (automatic protection, duration, moral rights), trademark and patent registration at OMPIC, infringement remedies (civil and criminal), and enforcement tools such as saisie-contrefaçon (Law 22-97 and amendments). Be precise on registration requirements and penalty ranges.`,
+  dataprotection: `For data protection questions, use the LEGAL REFERENCE DATA to explain Law 09-08 obligations: legal basis for processing, data subject rights (access, rectification, erasure, objection), CNDP declaration requirements, security obligations, and penalties for violations. Distinguish between ordinary personal data and sensitive categories.`,
+  cybercrime: `For cybercrime questions, use the LEGAL REFERENCE DATA to cite the relevant Penal Code articles (607-1 to 607-7 as introduced by Law 07-03), electronic signature rules (Law 53-05), consumer protection for online transactions (Law 31-08), and online fraud / identity theft provisions. Be precise on article numbers and penalty ranges.`,
+  environmental: `For environmental law questions, use the LEGAL REFERENCE DATA to explain EIA requirements (Law 12-03), water/air/waste pollution penalties, protected area rules, and civil/criminal liability for environmental damage (Laws 11-03, 28-00, 36-15). Explain the polluter-pays and precautionary principles and administrative enforcement powers.`,
   general: `For broad legal questions, provide a concise general explanation, reference any relevant articles from the LEGAL REFERENCE DATA if applicable, and maintain elegance, clarity, and legal precision.`,
 };
 
@@ -161,16 +168,24 @@ const LEGAL_KEYWORDS = [
   "rights","right","contract","crime","criminal","divorce","marriage","custody","inheritance",
   "theft","fraud","assault","lease","obligation","damages","arrest","trial","investigation",
   "jurisdiction","offence","offense","misdemeanor","felony","prosecution","defendant","plaintiff",
+  "employment","worker","salary","wage","dismissal","severance","labor","labour","company",
+  "merchant","trademark","patent","copyright","data protection","privacy","hacking","cybercrime",
+  "environment","pollution","waste","property","mortgage","real estate","land","intellectual",
   // French
   "loi","droit","droits","tribunal","juge","avocat","plainte","jugement","peine","amende",
   "appel","procès","contrat","bail","crime","infraction","mariage","divorce","garde",
   "succession","héritage","héritage","procédure","inculpé","prévenu","témoin","gendarmerie",
+  "travail","salarié","licenciement","salaire","employeur","entreprise","société","commerce",
+  "marque","brevet","contrefaçon","données","environnement","déchets","foncier","hypothèque",
   // Arabic
   "قانون","حق","حقوق","محكمة","قاضي","محامي","دعوى","شكوى","حكم","مادة","عقوبة","سجن",
   "غرامة","قانوني","مخالفة","جريمة","بلاغ","دستور","وثيقة","عقد","إجراء","استئناف",
   "توقيف","تقادم","اختصاص","شرطة","زواج","طلاق","حضانة","إرث","ميراث","نفقة","مهر",
   "خلع","سرقة","اعتداء","إرهاب","رشوة","مدونة","مسطرة","نيابة","وكيل","جنائي","جنحة",
   "جناية","تعويض","إخلال","بيع","شراء","كراء","التزام","محاكمة","تحقيق","ضحية","متهم",
+  "شغل","عامل","أجير","فصل","تعويض عن الفصل","أجر","شركة","تاجر","إفلاس","تصفية",
+  "علامة تجارية","براءة اختراع","حقوق النشر","ملكية فكرية","بيانات شخصية","خصوصية",
+  "جرائم إلكترونية","قرصنة","اختراق","بيئة","تلوث","نفايات","عقار","رهن","تحفيظ",
   // Darija transliterations / common Darija legal phrasing
   "محكمه","شكاية","الحضانة","الطلاق","الزواج","العقوبة","الجريمة","الحق","القانون",
   "الوراثة","الكراء","الحكم","القضية","وراثة","ميراث","الكراء",
@@ -214,11 +229,54 @@ function detectDomain(text) {
     "عقد", "التزام", "كراء", "تعويض", "إخلال", "بيع", "شراء",
     "contrat", "bail", "obligations", "dommages", "responsabilité",
   ];
+  const laborTerms = [
+    "labor", "labour", "employment", "worker", "employee", "salary", "wage", "dismissal", "severance", "termination",
+    "working hours", "overtime", "smig", "maternity", "strike", "union", "cnss", "social security",
+    "travail", "salarié", "licenciement", "salaire", "employeur", "heures supplémentaires", "congé",
+    "شغل", "عامل", "أجير", "فصل", "تعويض عن الفصل", "أجر", "ساعات العمل", "إضراب", "صناديق التقاعد",
+  ];
+  const commercialTerms = [
+    "commercial", "commerce", "merchant", "company", "sarl", "société anonyme", "bankruptcy", "insolvency",
+    "liquidation", "business fund", "fonds de commerce", "register", "registre de commerce",
+    "تجاري", "شركة", "تاجر", "إفلاس", "تصفية", "السجل التجاري", "مسطرة صعوبات المقاولة",
+  ];
+  const realEstateTerms = [
+    "real estate", "property", "land", "mortgage", "title", "immatriculation", "hypothèque", "foncier",
+    "copropriété", "expropriation", "lease", "eviction", "titre foncier",
+    "عقار", "ملكية عقارية", "رهن", "تحفيظ", "نزع الملكية", "طرد", "ملكية مشتركة",
+  ];
+  const ipTerms = [
+    "trademark", "patent", "copyright", "intellectual property", "brand", "counterfeit", "ompic",
+    "marque", "brevet", "droits d'auteur", "contrefaçon", "propriété intellectuelle",
+    "علامة تجارية", "براءة اختراع", "حقوق النشر", "ملكية فكرية", "تقليد",
+  ];
+  const dataProtectionTerms = [
+    "data protection", "personal data", "privacy", "gdpr", "cndp", "data breach",
+    "données personnelles", "protection des données",
+    "بيانات شخصية", "حماية البيانات", "خصوصية",
+  ];
+  const cybercrimeTerms = [
+    "cyber", "hacking", "phishing", "unauthorized access", "electronic", "online fraud", "identity theft",
+    "piratage", "accès non autorisé", "fraude en ligne",
+    "جرائم إلكترونية", "قرصنة", "اختراق", "نصب إلكتروني",
+  ];
+  const environmentalTerms = [
+    "environment", "pollution", "waste", "eia", "biodiversity", "water pollution", "hazardous",
+    "environnement", "déchets", "polluant", "étude d'impact",
+    "بيئة", "تلوث", "نفايات", "حماية البيئة", "تقييم الأثر البيئي",
+  ];
 
-  if (familyTerms.some((k) => t.includes(k))) return "family";
-  if (penalTerms.some((k) => t.includes(k))) return "penal";
-  if (procedureTerms.some((k) => t.includes(k))) return "procedure";
-  if (contractTerms.some((k) => t.includes(k))) return "contracts";
+  if (familyTerms.some((k) => t.includes(k)))         return "family";
+  if (penalTerms.some((k) => t.includes(k)))           return "penal";
+  if (procedureTerms.some((k) => t.includes(k)))       return "procedure";
+  if (laborTerms.some((k) => t.includes(k)))           return "labor";
+  if (commercialTerms.some((k) => t.includes(k)))      return "commercial";
+  if (realEstateTerms.some((k) => t.includes(k)))      return "realestate";
+  if (ipTerms.some((k) => t.includes(k)))              return "ip";
+  if (dataProtectionTerms.some((k) => t.includes(k)))  return "dataprotection";
+  if (cybercrimeTerms.some((k) => t.includes(k)))      return "cybercrime";
+  if (environmentalTerms.some((k) => t.includes(k)))   return "environmental";
+  if (contractTerms.some((k) => t.includes(k)))        return "contracts";
   return "general";
 }
 

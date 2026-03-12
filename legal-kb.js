@@ -243,31 +243,327 @@ ENFORCEMENT:
 • Imprisonment for debt: NOT available for ordinary debts`;
 
 /* ─────────────────────────────────────────────
+   LABOR CODE (Law 65-99 / 2004)
+───────────────────────────────────────────── */
+export const LABOR_KB = `
+LABOR CODE (Law 65-99 / 2004) – KEY PROVISIONS
+
+EMPLOYMENT CONTRACT TYPES (Arts. 13–16):
+• Art. 13 – Employment contract may be fixed-term or indefinite; written form required for fixed-term
+• Art. 14 – Fixed-term contracts: max 1 year, renewable once; becomes indefinite if continued beyond maximum
+• Art. 15 – Part-time employees enjoy same rights as full-time pro rata
+• Art. 16 – Probation period: 3 months for executives/managers, 1.5 months for employees, 15 days for workers; renewable once
+
+WAGES & WORKING TIME (Arts. 23, 201–205):
+• Art. 23 – Employer must pay wages in national currency; cannot be paid in-kind only
+• Minimum wage (SMIG): updated periodically by government decree; applies to all private-sector workers
+• Maximum working hours: 44 hours/week (10 hours/day max)
+• Overtime: paid at 125% of base (or 150% on rest days); Art. 201
+
+EMPLOYEE PROTECTIONS (Arts. 39–40):
+• Art. 39 – Gross misconduct justifying immediate dismissal: violence/assault at work, serious insubordination, theft, moral offenses, absences without notice >4 days/month
+• Art. 40 – Unjustified dismissal (licenciement abusif): employee entitled to: (a) notice period (1 month for employees, 1.5 months for manager-level), (b) severance pay = 1/2 month wage × years of service for first 5 years + 2/3 month per year 6–10 + 1 month per year after 10, (c) damages if no fault
+
+DISMISSAL PROCEDURE:
+• Employer must: (1) summon employee for prior hearing, (2) notify in writing with reasons, (3) respect notice period (unless gross misconduct)
+• Collective dismissal requires: prior consultation with workers' representatives, ANAPEC notification, labor inspector authorization for >10 employees
+
+WOMEN & CHILD PROTECTION:
+• Maternity leave: 14 weeks paid (Art. 152)
+• Night work for women: allowed only in specific sectors with enhanced protections
+• Minimum age for employment: 15 years (Art. 143); hazardous work: 18 years
+
+LABOR DISPUTES:
+• Individual disputes first go to labor inspector for conciliation
+• If failed: Labor Court (Tribunal du Travail) in Courts of First Instance
+• Collective disputes: Ministry of Labor mediation; then arbitration if needed
+
+SOCIAL SECURITY / CNSS:
+• Employer contribution: ~16.29% of wage; employee: ~4.29%
+• Covers: sickness, maternity, disability, work accidents, retirement (60 years for private sector), death benefit`;
+
+/* ─────────────────────────────────────────────
+   COMMERCIAL CODE (Law 15-95 / 1996)
+───────────────────────────────────────────── */
+export const COMMERCIAL_KB = `
+COMMERCIAL CODE (Law 15-95 / 1996) – KEY PROVISIONS
+
+DEFINITION OF MERCHANT & COMMERCIAL ACT (Arts. 1–3):
+• Art. 1 – A commercial act is one performed habitually for profit: purchase-resale, manufacturing, banking, insurance, transport, real estate development, services
+• Art. 2 – Merchant (commerçant): any natural or legal person habitually performing commercial acts for their own benefit
+• Art. 3 – Commercial companies are merchants from their date of registration in the commercial register
+
+COMMERCIAL REGISTER (RC):
+• All merchants must register: individual traders within 3 months of starting activity
+• Failure to register: merchant cannot invoke commercial status but remains bound by obligations
+• Changes (address, partner, dissolution) must be filed within 1 month
+
+COMMERCIAL OBLIGATIONS:
+• Commercial obligations are subject to: 5-year statute of limitations (vs. 15 years civil)
+• Commercial contracts: binding from meeting of minds; no formality required unless specifically provided
+• Commercial partners: jointly and severally liable unless agreed otherwise
+
+BUSINESS FUNDS (FONDS DE COMMERCE, Arts. 79–108):
+• Business fund includes: trade name, client base, goodwill, IP rights, equipment, stock
+• Sale of business fund must be in writing; published in Official Gazette and commercial register
+• Pre-emption right of lessors may apply
+• Pledge of business fund: allowed as security for loans
+
+COMMERCIAL COMPANIES (Law 17-95 on SA; Law 5-96 on SARL/SNC):
+• SARL (Société à responsabilité limitée): min capital 10,000 MAD; shareholders liable only to extent of contributions; common for SMEs
+• SA (Société anonyme): min capital 300,000 MAD (non-public) or 3,000,000 MAD (public offering); board of directors required
+• SNC (Société en nom collectif): partners jointly and severally liable; no minimum capital
+• Dissolution: by shareholders vote, court order, expiration of term, loss of ≥75% capital
+
+INSOLVENCY & BANKRUPTCY (Arts. 545–757):
+• Art. 550 – Procedure of difficulty (procédure de traitement des difficultés): reorganization plan (sauvegarde, redressement) before liquidation
+• Judicial liquidation: liquidator appointed by court; assets sold to pay creditors in priority order
+• Priority: super-privileged claims (wages up to 3 months) → secured claims → unsecured claims`;
+
+/* ─────────────────────────────────────────────
+   REAL ESTATE LAW (Law 39-08 / 2011)
+───────────────────────────────────────────── */
+export const REALESTATE_KB = `
+REAL ESTATE LAW – KEY PROVISIONS (Law 39-08 on Real Property Rights, 2011)
+
+PROPERTY REGISTRATION (TITRAGE FONCIER):
+• Land registration under dahir of 12 August 1913 (Immatriculation Foncière)
+• Once registered (titre foncier), ownership is definitive and unassailable (opposable à tous)
+• Unregistered property (melkia): governed by customary/Islamic law; less secure title
+• Registration process: publication → objections period (2 months) → final title issued
+
+OWNERSHIP RIGHTS (Arts. 17–23 of Law 39-08):
+• Owner has full right to use, enjoy, and dispose of property
+• Co-ownership (indivision): each co-owner has proportional share; may request partition
+• Usufruct (droit d'usufruit): right to use property owned by another; extinguished upon death
+• Easements (servitudes): access rights, light servitudes, registered on title
+
+REAL ESTATE TRANSACTIONS:
+• Sale of registered property: requires authenticated notarial deed; transfer registered on titre foncier
+• Sale of unregistered property: private deed valid; registration recommended for security
+• Transfer tax: 4% of sale price (droits d'enregistrement); reduceable for first-time buyers
+• Capital gains tax (TPI): applies to resales; rate varies by holding period
+
+PRE-EMPTION RIGHTS (CHEFAA):
+• Co-owners and neighbors have pre-emption right on sale: must exercise within 7 days of notification
+• Pre-emption under Islamic law (shuf'a): applies to undivided property; waivable
+
+EXPROPRIATION (Law 7-81):
+• State may expropriate for public utility upon: declaration of public benefit, prior fair compensation
+• Owner may challenge valuation in court; entitled to full market value + ancillary damages
+• Occupation before full payment: provisional compensation must be deposited
+
+HORIZONTAL PROPERTY/CO-OWNERSHIP (Copropriété, Law 18-00):
+• Co-owners in apartment buildings: syndicat des copropriétaires (owners' association)
+• Common areas can only be modified by unanimous vote or qualified majority
+• Charges for maintenance: allocated per share; unpaid charges enforceable by court
+
+MORTGAGE & SECURITY (Hypothèque):
+• Mortgage on registered property: requires notarial deed + registration on titre foncier
+• Priority: first registered mortgage has priority
+• Foreclosure: judicial sale after notice; proceeds distributed by priority`;
+
+/* ─────────────────────────────────────────────
+   INTELLECTUAL PROPERTY (Law 22-97 / 2000, as amended)
+───────────────────────────────────────────── */
+export const IP_KB = `
+INTELLECTUAL PROPERTY LAW (Law 22-97 / 2000, as amended by Law 34-05 and Law 99-12) – KEY PROVISIONS
+Managed by: OMPIC (Office Marocain de la Propriété Industrielle et Commerciale)
+
+COPYRIGHT (DROIT D'AUTEUR):
+• Protection automatic from creation (no registration required)
+• Duration: life of author + 70 years
+• Protected works: literary, musical, visual art, film, architecture, software, databases
+• Moral rights (droit moral): perpetual, inalienable — author's name and integrity rights
+• Economic rights: reproduction, distribution, public performance, broadcasting
+• Infringement: civil damages + criminal sanctions 10,000–1,000,000 MAD; repeat offenders: up to 2 years prison
+
+TRADEMARKS (MARQUES):
+• Registration required for protection; filed with OMPIC
+• Duration: 10 years from filing date, renewable indefinitely
+• Rights: exclusive use in Morocco for registered goods/services classes (Nice classification)
+• Infringement (contrefaçon): 3 months–5 years, 25,000–1,500,000 MAD fine
+• Well-known marks (Art. 141): protected even without registration in Morocco
+
+PATENTS (BREVETS):
+• Protection: 20 years from filing date (non-renewable)
+• Required: novelty, inventive step, industrial application
+• Can be filed at OMPIC or via PCT (Patent Cooperation Treaty)
+• Patent owner may grant licenses; compulsory license possible if not worked within 3 years
+• Infringement: civil damages; criminal: 10,000–500,000 MAD
+
+INDUSTRIAL DESIGNS (DESSINS ET MODÈLES):
+• Registration at OMPIC; protection 5 years renewable up to 25 years total
+• Protects ornamental/aesthetic aspects of a product
+
+GEOGRAPHICAL INDICATIONS (INDICATIONS GÉOGRAPHIQUES):
+• Protected under Law 25-06; origin marks for products with specific geographic link (Argane oil, Argan)
+
+ENFORCEMENT:
+• Saisie-contrefaçon: rightholder can request court-ordered seizure of infringing goods
+• Customs may detain suspected infringing imports`;
+
+/* ─────────────────────────────────────────────
+   DATA PROTECTION (Law 09-08 / 2009)
+───────────────────────────────────────────── */
+export const DATAPROTECTION_KB = `
+DATA PROTECTION LAW (Law 09-08 / 2009) – KEY PROVISIONS
+Supervised by: CNDP (Commission Nationale de contrôle de la Protection des Données à caractère Personnel)
+
+SCOPE & DEFINITIONS:
+• Applies to all automated and manual processing of personal data of natural persons in Morocco
+• Personal data: any information identifying or making identifiable a natural person (name, ID, address, phone, email, biometric)
+• Data controller: any person/entity determining purposes and means of processing
+• Special categories: ethnic origin, political opinions, religious beliefs, health, sex life — extra protection required
+
+LEGAL BASIS FOR PROCESSING:
+• Unambiguous consent of data subject, OR
+• Performance of a contract, OR
+• Legal obligation, OR
+• Public interest, OR
+• Legitimate interests pursued by controller (proportionate)
+
+DATA SUBJECT RIGHTS (Arts. 7–12):
+• Right of access: data subject can request copy of personal data held
+• Right of rectification: correct inaccurate data
+• Right to object: to processing for direct marketing; to any processing on legitimate grounds
+• Right of erasure: delete data no longer necessary
+• Right to information: at time of collection — must disclose purpose, identity of controller, recipients
+
+OBLIGATIONS OF DATA CONTROLLERS (Arts. 15–23):
+• Prior declaration to CNDP required for most processing (or authorization for sensitive data)
+• Security measures: technical and organizational measures to protect against unauthorized access, loss, destruction
+• Data retention: no longer than necessary for stated purpose
+• Transfers abroad: allowed only to countries with adequate level of protection (CNDP approval required otherwise)
+
+SANCTIONS (Arts. 44–65):
+• Administrative: CNDP may issue compliance orders, fines
+• Criminal: unauthorized processing / failure to notify data breach: 10,000–300,000 MAD, 3 months–3 years imprisonment
+• Aggravated: processing sensitive data without authorization: doubled penalties
+• Companies criminally liable; director may also be personally prosecuted`;
+
+/* ─────────────────────────────────────────────
+   CYBERCRIME / IT LAW (Law 07-03 / 2003 amending Penal Code; Law 09-08)
+───────────────────────────────────────────── */
+export const CYBERCRIME_KB = `
+CYBERCRIME AND IT LAW (Law 07-03 of 2003 — amendments to Penal Code; Law 09-08; Law 31-08 on Consumer Protection) – KEY PROVISIONS
+
+UNAUTHORIZED ACCESS (Arts. 607-1 to 607-7 Penal Code, as amended by Law 07-03):
+• Art. 607-1 – Accessing or remaining in an automated data processing system without authorization: 3 months–1 year, 2,000–10,000 MAD
+• Art. 607-2 – Unauthorized access causing modification or deletion of data: 1–3 years, 10,000–200,000 MAD
+• Art. 607-3 – Fraudulently preventing or distorting system operation: 2–6 years, 10,000–200,000 MAD
+• Art. 607-4 – Introduction of fraudulent or false data: 2–6 years, 10,000–200,000 MAD
+• Art. 607-5 – Interception of data transmissions without authorization: 1–3 years, 10,000–200,000 MAD
+
+CYBERFRAUD & PHISHING:
+• Online fraud prosecuted under Penal Code Art. 450 (escroquerie) + Art. 607 for IT element
+• Identity theft online: Art. 447-1 Penal Code: 6 months–3 years, 10,000–100,000 MAD
+• Phishing / fake websites: charged as fraud + unauthorized IT system use
+
+ELECTRONIC SIGNATURES & COMMERCE (Law 53-05 / 2007):
+• Electronic signature legally equivalent to handwritten signature if meeting security criteria
+• Trusted certification authority (AC) issues qualified certificates
+• Electronic documents admissible as evidence equivalent to written document
+
+ELECTRONIC TRANSACTIONS (Law 31-08 on Consumer Protection; Law 08-09):
+• Online merchants must: clearly display identity, product description, total price including taxes
+• Consumer has 7-day cooling-off right for distance purchases
+• Unsolicited commercial emails (spam): prohibited without prior consent of recipient
+
+INTERCEPTION & ELECTRONIC SURVEILLANCE:
+• Lawful interception: only by judicial order; unauthorized interception of communications: criminal offense under Art. 607-5 + Law 24-96 on Telecommunications
+
+PENALTIES SUMMARY:
+• Basic unauthorized access: 3 months–1 year + fine
+• With data damage: 1–6 years + fine
+• Organized cybercrime gang: penalties doubled
+• Company liability: fine up to 10× individual fine`;
+
+/* ─────────────────────────────────────────────
+   ENVIRONMENTAL LAW (Law 11-03 / 2003)
+───────────────────────────────────────────── */
+export const ENVIRONMENTAL_KB = `
+ENVIRONMENTAL PROTECTION LAW (Law 11-03 / 2003 on Protection and Enhancement of the Environment) – KEY PROVISIONS
+
+GENERAL PRINCIPLES (Arts. 1–6):
+• Art. 1 – State, local authorities, and persons must protect the environment for present and future generations
+• Polluter-pays principle: whoever causes environmental damage bears cost of prevention/remediation
+• Precautionary principle: absence of certainty does not justify postponing preventive measures
+• Art. 3 – Right to a healthy environment: citizens can report violations to environmental authorities
+
+ENVIRONMENTAL IMPACT ASSESSMENT (EIA — Law 12-03 / 2003):
+• Required for any project likely to affect environment: industrial plants, roads, dams, tourism projects
+• Process: EIA study → public inquiry → review committee → ministerial authorization
+• Decision issued within 60 days of complete file submission; renewable
+• Operating without valid EIA authorization: fine + suspension of works
+
+WATER PROTECTION (Law 36-15 / 2016 on Water):
+• Discharge of pollutants into public water domain: requires prior authorization or prohibited
+• National water protection standards set by decree
+• Penalties: 200,000–2,000,000 MAD for illegal discharge; closure of facility possible
+
+AIR QUALITY & INDUSTRY:
+• Industrial facilities classified as dangerous/unhealthy/unsanitary require environmental authorization
+• Air emission standards set by decree; non-compliance: fines + closure orders
+• Vehicle emissions: controlled via periodic technical inspection
+
+WASTE MANAGEMENT (Law 28-00 / 2006):
+• Producers of hazardous waste must register and hold hazardous waste permit
+• Household solid waste: managed by municipalities
+• Illegal dumping: 2,000–20,000 MAD fine; repeat: doubled
+• Hazardous waste illegal disposal: 50,000–500,000 MAD + possible imprisonment
+
+PROTECTED AREAS & BIODIVERSITY:
+• National parks and protected areas designated by royal decree; activities strictly regulated
+• Hunting and fishing: regulated licences; illegal hunting: fine + confiscation of equipment
+• Protected species: trade/capture prohibited; criminal penalties
+
+ENFORCEMENT:
+• Environmental police (inspecteurs de l'environnement): authority to inspect premises, take samples, issue compliance notices
+• Administrative sanctions: suspension of operations, withdrawal of authorization, remediation order
+• Civil liability: any person causing environmental harm liable for remediation cost + damages
+• Criminal liability: intentional pollution offenses: up to 2 years + heavy fines`;
+
+/* ─────────────────────────────────────────────
    SELECTOR – pick KB section for domain
 ───────────────────────────────────────────── */
 export function getLegalContext(domain, userText) {
   const t = (userText || "").toLowerCase();
 
   // Sub-domain refinement
-  const hasViolence    = /violen|assault|murder|homicide|agression|meurtre|ضرب|قتل|اعتداء/.test(t);
-  const hasSexual      = /rape|sexual|viol|agression sexuelle|اغتصاب|تحرش|فاحشة/.test(t);
-  const hasProperty    = /theft|vol|robbery|fraud|forgery|سرقة|احتيال|تزوير/.test(t);
-  const hasSpecial     = /traffick|traite|terrorism|terrorisme|drug|drogue|weapon|arme|إرهاب|اتجار|مخدر/.test(t);
-  const hasSports      = /sport|stade|stadium|شغب|مشجع|ملاعب|شماريخ|hooliganis/.test(t);
-  const hasFamily      = /marriage|divorce|custody|inherit|moudawana|mariage|garde|héritage|زواج|طلاق|حضانة|إرث|مهر|نفقة/.test(t);
-  const hasProcedure   = /procedure|appeal|trial|detention|garde à vue|prescription|appel|مسطرة|توقيف|استئناف|تقادم/.test(t);
-  const hasContracts   = /contract|lease|obligation|bail|contrat|عقد|كراء|التزام|تعويض/.test(t);
+  const hasViolence       = /violen|assault|murder|homicide|agression|meurtre|ضرب|قتل|اعتداء/.test(t);
+  const hasSexual         = /rape|sexual|viol|agression sexuelle|اغتصاب|تحرش|فاحشة/.test(t);
+  const hasProperty       = /theft|vol|robbery|fraud|forgery|سرقة|احتيال|تزوير/.test(t);
+  const hasSpecial        = /traffick|traite|terrorism|terrorisme|drug|drogue|weapon|arme|إرهاب|اتجار|مخدر/.test(t);
+  const hasSports         = /sport|stade|stadium|شغب|مشجع|ملاعب|شماريخ|hooliganis/.test(t);
+  const hasFamily         = /marriage|divorce|custody|inherit|moudawana|mariage|garde|héritage|زواج|طلاق|حضانة|إرث|مهر|نفقة/.test(t);
+  const hasProcedure      = /procedure|appeal|trial|detention|garde à vue|prescription|appel|مسطرة|توقيف|استئناف|تقادم/.test(t);
+  const hasContracts      = /contract|lease|obligation|bail|contrat|عقد|كراء|التزام|تعويض/.test(t);
+  const hasLabor          = /labor|labour|employment|worker|salary|wage|dismissal|licenciement|salarié|travail|contrat de travail|شغل|عامل|أجير|فصل|تعويض عن الفصل|أجر/.test(t);
+  const hasCommercial     = /commercial|commerce|merchant|company|société|sarl|sa\b|bankruptcy|insolvency|fonds de commerce|liquidation|تجاري|شركة|تاجر|إفلاس|تصفية/.test(t);
+  const hasRealEstate     = /real estate|property|mortgage|land|title|immatriculation|hypothèque|foncier|copropriété|expropriation|عقار|ملكية عقارية|رهن|تحفيظ|طرد/.test(t);
+  const hasIP             = /intellectual property|trademark|patent|copyright|brand|marque|brevet|contrefaçon|ompic|ملكية فكرية|علامة تجارية|براءة اختراع|حقوق النشر/.test(t);
+  const hasDataProtection = /data protection|personal data|privacy|gdpr|cndp|données personnelles|حماية البيانات|بيانات شخصية|خصوصية/.test(t);
+  const hasCybercrime     = /cyber|hacking|phishing|unauthorized access|electronic|piratage|jrimes informatiques|جرائم إلكترونية|قرصنة|اختراق|نصب إلكتروني/.test(t);
+  const hasEnvironmental  = /environment|pollution|waste|nature|biodiversity|eia|environnement|déchets|polluant|بيئة|تلوث|نفايات/.test(t);
 
   const parts = [];
 
-  if (domain === "family" || hasFamily)         parts.push(FAMILY_KB);
-  if (hasSports || (domain === "penal" && hasSports)) parts.push(PENAL_VIOLENCE_KB);
+  if (domain === "family" || hasFamily)                 parts.push(FAMILY_KB);
+  if (hasSports || (domain === "penal" && hasSports))   parts.push(PENAL_VIOLENCE_KB);
   if (domain === "penal" && (hasViolence || hasSexual || (!hasProperty && !hasSpecial))) parts.push(PENAL_VIOLENCE_KB);
   if (domain === "penal" && (hasProperty || (!hasViolence && !hasSpecial && !hasSexual))) parts.push(PENAL_PROPERTY_KB);
-  if (domain === "penal" && hasSpecial)         parts.push(PENAL_SPECIAL_KB);
-  if (domain === "penal" && parts.length === 0) parts.push(PENAL_VIOLENCE_KB, PENAL_PROPERTY_KB);
-  if (domain === "procedure" || hasProcedure)   parts.push(PROCEDURE_KB);
-  if (domain === "contracts" || hasContracts)   parts.push(CONTRACTS_KB);
+  if (domain === "penal" && hasSpecial)                 parts.push(PENAL_SPECIAL_KB);
+  if (domain === "penal" && parts.length === 0)         parts.push(PENAL_VIOLENCE_KB, PENAL_PROPERTY_KB);
+  if (domain === "procedure" || hasProcedure)           parts.push(PROCEDURE_KB);
+  if (domain === "contracts" || hasContracts)           parts.push(CONTRACTS_KB);
+  if (domain === "labor" || hasLabor)                   parts.push(LABOR_KB);
+  if (domain === "commercial" || hasCommercial)         parts.push(COMMERCIAL_KB);
+  if (domain === "realestate" || hasRealEstate)         parts.push(REALESTATE_KB);
+  if (domain === "ip" || hasIP)                         parts.push(IP_KB);
+  if (domain === "dataprotection" || hasDataProtection) parts.push(DATAPROTECTION_KB);
+  if (domain === "cybercrime" || hasCybercrime)         parts.push(CYBERCRIME_KB);
+  if (domain === "environmental" || hasEnvironmental)   parts.push(ENVIRONMENTAL_KB);
 
   // Deduplicate
   const seen = new Set();
@@ -295,5 +591,12 @@ export default {
   PROCEDURE_KB,
   CONTRACTS_KB,
   SENTENCING_KB,
+  LABOR_KB,
+  COMMERCIAL_KB,
+  REALESTATE_KB,
+  IP_KB,
+  DATAPROTECTION_KB,
+  CYBERCRIME_KB,
+  ENVIRONMENTAL_KB,
   getLegalContext,
 };
