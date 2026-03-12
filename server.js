@@ -186,6 +186,14 @@ const LEGAL_KEYWORDS = [
   "succession","héritage","héritage","procédure","inculpé","prévenu","témoin","gendarmerie",
   "travail","salarié","licenciement","salaire","employeur","entreprise","société","commerce",
   "marque","brevet","contrefaçon","données","environnement","déchets","foncier","hypothèque",
+  // French — crimes & civil (previously missing)
+  "vol","escroquerie","abus de confiance","arnaque","détournement","faux","usage de faux",
+  "coups","blessures","homicide","viol","agression","menace","harcèlement","diffamation",
+  "dette","créance","débiteur","créancier","litige","civil","preuve","prouver","témoignage",
+  "acte","notaire","authentique","sous seing","mise en demeure","assignation","huissier",
+  "saisie","exécution","recouvrement","prescription","délai","responsabilité","préjudice",
+  "dommages","indemnisation","réparation","propriété","locataire","propriétaire","loyer",
+  "résiliation","résolution","nullité","annulation","vice","consentement","capacité",
   // Arabic
   "قانون","حق","حقوق","محكمة","قاضي","محامي","دعوى","شكوى","حكم","مادة","عقوبة","سجن",
   "غرامة","قانوني","مخالفة","جريمة","بلاغ","دستور","وثيقة","عقد","إجراء","استئناف",
@@ -220,7 +228,9 @@ const OFF_TOPIC_RESPONSES = {
 
 function normalizeArabic(text) {
   return (text || "")
-    // Strip diacritics (tashkeel) — U+0610..U+061A, U+064B..U+065F, U+0670
+    // Strip Latin accent marks (NFD decomposition) so hériter = heriter, etc.
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    // Strip Arabic diacritics (tashkeel) — U+0610..U+061A, U+064B..U+065F, U+0670
     .replace(/[\u0610-\u061A\u064B-\u065F\u0670]/g, "")
     // Normalize all alef variants → plain alef ا
     .replace(/[أإآٱ]/g, "ا")
