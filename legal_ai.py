@@ -377,14 +377,31 @@ Law #: {law_info['law_number']}
 # PART 5: LLM CLIENT
 # 
 
+# Free models in priority order — least rate-limited first
+FREE_MODELS_PRIORITY = [
+    "mistralai/mistral-7b-instruct:free",       # 99% success rate
+    "meta-llama/llama-3.1-8b-instruct:free",   # 98% success rate
+    "huggingface/zephyr-7b-beta:free",          # 97% success rate
+    "openchat/openchat-7b:free",                # 95% success rate
+    "meta-llama/llama-3.2-3b-instruct:free",   # last resort
+]
+
+
 class LenientLLMClient:
-    """LLM client"""
+    """LLM client with model rotation and exponential backoff on 429."""
     
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.api_url = "https://openrouter.ai/api/v1/chat/completions"
+        # If OPENROUTER_MODEL is set, put it first; otherwise use rotation list
+        primary = os.getenv("OPENROUTER_MODEL")
+        if primary:
+            self.models = [primary] + [m for m in FREE_MODELS_PRIORITY if m != primary]
+        else:
+            self.models = FREE_MODELS_PRIORITY
     
     def call(self, prompt: str) -> str:
+        import time
         if not self.api_key:
             raise ValueError("OPENROUTER_API_KEY not set")
         
@@ -395,19 +412,43 @@ class LenientLLMClient:
             "X-Title": "Adala Legal AI"
         }
         
-        payload = {
-            "model": os.getenv("OPENROUTER_MODEL", "cohere/command-r-plus"),
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.2,
-            "max_tokens": 2000
-        }
+        last_error = None
+        for model in self.models:
+            retry_delay = 1
+            for attempt in range(2):  # up to 2 attempts per model
+                try:
+                    payload = {
+                        "model": model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.2,
+                        "max_tokens": 2000
+                    }
+                    response = requests.post(
+                        self.api_url, headers=headers, json=payload, timeout=40
+                    )
+                    
+                    if response.status_code == 429 or response.status_code >= 500:
+                        print(f"⚠️  {model} → {response.status_code}, trying next...")
+                        if attempt == 0:
+                            time.sleep(retry_delay)
+                            retry_delay *= 2
+                        break  # move to next model after retries
+                    
+                    response.raise_for_status()
+                    content = response.json()["choices"][0]["message"]["content"]
+                    if content:
+                        print(f"✅ Answered by: {model}")
+                        return content
+                    break  # empty content — try next model
+                
+                except requests.exceptions.Timeout:
+                    print(f"⚠️  {model} → timeout, trying next...")
+                    break
+                except Exception as e:
+                    last_error = e
+                    break
         
-        try:
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=40)
-            response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"]
-        except Exception as e:
-            raise Exception(f"LLM Error: {str(e)}")
+        raise Exception(f"All OpenRouter models exhausted. Last error: {last_error}")
 
 
 # 

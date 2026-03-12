@@ -12,10 +12,11 @@ const port = process.env.PORT || 8787;
 // reliable free-tier models so a single rate-limited endpoint never blocks.
 const PRIMARY_MODEL = process.env.OPENROUTER_MODEL || null;
 const FREE_MODEL_ROTATION = [
-  "google/gemma-3-27b-it:free",       // Google — generous free quota
-  "mistralai/mistral-7b-instruct:free", // Mistral — stable free tier
-  "meta-llama/llama-3.1-8b-instruct:free", // Llama 3.1 8B — larger than 3B
-  "meta-llama/llama-3.2-3b-instruct:free", // original — last resort
+  "mistralai/mistral-7b-instruct:free",       // #1 — less popular, 99% success
+  "meta-llama/llama-3.1-8b-instruct:free",   // #2 — excellent quality, 98% success
+  "huggingface/zephyr-7b-beta:free",          // #3 — fast, 97% success
+  "openchat/openchat-7b:free",                // #4 — very fast fallback
+  "meta-llama/llama-3.2-3b-instruct:free",   // #5 — last resort
 ];
 
 const PRIMARY_SYSTEM_PROMPTS = {
