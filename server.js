@@ -8,7 +8,15 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 8787;
-const model = process.env.OPENROUTER_MODEL || "openrouter/free";
+// Primary model (can be overridden via env).  Falls back to a rotation of
+// reliable free-tier models so a single rate-limited endpoint never blocks.
+const PRIMARY_MODEL = process.env.OPENROUTER_MODEL || null;
+const FREE_MODEL_ROTATION = [
+  "google/gemma-3-27b-it:free",       // Google — generous free quota
+  "mistralai/mistral-7b-instruct:free", // Mistral — stable free tier
+  "meta-llama/llama-3.1-8b-instruct:free", // Llama 3.1 8B — larger than 3B
+  "meta-llama/llama-3.2-3b-instruct:free", // original — last resort
+];
 
 const PRIMARY_SYSTEM_PROMPTS = {
   ar: `أنت مساعد قانوني مغربي متخصص في القانون المغربي، وتكتب بأسلوب قانوني أنيق وسلس.
@@ -427,32 +435,54 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
       }
     }
 
-    // ── 2. OpenRouter ──────────────────────────────────────────────────
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: 2500,
-        temperature: 0.4,
-        top_p: 0.9,
-      }),
-    });
+    // ── 2. OpenRouter — model rotation (skips 429/5xx automatically) ──────
+    const modelsToTry = PRIMARY_MODEL
+      ? [PRIMARY_MODEL, ...FREE_MODEL_ROTATION.filter(m => m !== PRIMARY_MODEL)]
+      : FREE_MODEL_ROTATION;
 
-    const data = await response.json();
-    const message = data?.choices?.[0]?.message;
-    const content = message?.content || message?.reasoning || null;
+    let orContent = null;
+    let lastOrData = null;
+    for (const candidate of modelsToTry) {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: candidate,
+          messages,
+          max_tokens: 2500,
+          temperature: 0.4,
+          top_p: 0.9,
+        }),
+      });
 
-    if (response.ok && content) {
-      const suggestions = await suggestionsPromise;
-      return res.json({ content, suggestions });
+      const data = await response.json();
+      lastOrData = data;
+
+      if (response.status === 429 || response.status >= 500) {
+        console.warn(`[QA] OpenRouter model ${candidate} unavailable (${response.status}), trying next...`);
+        continue;
+      }
+
+      const message = data?.choices?.[0]?.message;
+      const content = message?.content || message?.reasoning || null;
+      if (response.ok && content) {
+        orContent = content;
+        console.log(`[QA] OpenRouter answered with model: ${candidate}`);
+        break;
+      }
+
+      console.warn(`[QA] OpenRouter model ${candidate} returned no content, trying next...`);
     }
 
-    console.warn("[QA] OpenRouter failed, trying Cohere fallback. Status:", response.status, JSON.stringify(data).slice(0, 200));
+    if (orContent) {
+      const suggestions = await suggestionsPromise;
+      return res.json({ content: orContent, suggestions });
+    }
+
+    console.warn("[QA] All OpenRouter models exhausted, trying Cohere fallback.", JSON.stringify(lastOrData).slice(0, 200));
 
     // ── Fallback: Cohere command-a-03-2025 ────────────────────────────────
     const cohereKey = process.env.COHERE_API_KEY;
