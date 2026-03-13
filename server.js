@@ -14,6 +14,8 @@ const GEMINI_FLASH = "gemini-2.5-flash";
 const GEMINI_FLASH_LITE = "gemini-2.5-flash-lite";
 const COHERE_COMMAND_MODEL = "command-a-03-2025";
 const GROQ_LLAMA_33_70B = "llama-3.3-70b-versatile";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4-mini";
+const OPENAI_FALLBACK_MODEL = process.env.OPENAI_FALLBACK_MODEL || "gpt-4o-mini";
 
 const PRIMARY_SYSTEM_PROMPTS = {
   ar: `أنت مساعد قانوني مغربي متخصص في القانون المغربي، وتكتب بأسلوب قانوني أنيق وسلس.
@@ -728,8 +730,10 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
     const geminiKey = process.env.GEMINI_API_KEY;
     const groqKey = process.env.GROQ_API_KEY;
     const cohereKey = process.env.COHERE_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
     let lastGeminiData = null;
     let lastGroqData = null;
+    let lastOpenAIData = null;
     let fallbackData = null;
 
     const geminiMessages = messages.map((m) => ({
@@ -834,6 +838,56 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
       return null;
     };
 
+    const tryOpenAI = async () => {
+      if (!openaiKey) return null;
+      
+      // Two-tier fallback: nano (cheapest) → mini (more capable)
+      const tryModelWithFallback = async (model) => {
+        try {
+          const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${openaiKey}`,
+            },
+            body: JSON.stringify({
+              model,
+              messages,
+              max_tokens: 2500,
+              temperature: 0.4,
+            }),
+          });
+          const data = await response.json();
+          lastOpenAIData = data;
+          if (!response.ok) {
+            console.warn(`[QA] OpenAI/${model} -> ${response.status} | ${data?.error?.message || "unknown_error"}`);
+            return null;
+          }
+          const content = data?.choices?.[0]?.message?.content || null;
+          if (content && content.length > 100) {
+            console.log(`[QA] answered by OpenAI/${model} (${content.length} chars for ${lang})`);
+            return { content, model };
+          }
+        } catch (e) {
+          console.warn(`[QA] OpenAI/${model} fetch error | ${e.message}`);
+        }
+        return null;
+      };
+      
+      // Primary: nano (cheapest)
+      let result = await tryModelWithFallback(OPENAI_MODEL);
+      if (result) return result.content;
+      
+      // Fallback: mini (more capable if nano fails)
+      if (OPENAI_FALLBACK_MODEL && OPENAI_FALLBACK_MODEL !== OPENAI_MODEL) {
+        console.log(`[QA] OpenAI/${OPENAI_MODEL} insufficient, trying fallback ${OPENAI_FALLBACK_MODEL}...`);
+        result = await tryModelWithFallback(OPENAI_FALLBACK_MODEL);
+        if (result) return result.content;
+      }
+      
+      return null;
+    };
+
     const text = `${lastUserMessage}`;
     const hasArabic = /[\u0600-\u06FF]/.test(text);
     const hasFrenchMarkers = /[àâçéèêëîïôûùüÿœæ]|\b(le|la|les|des|du|de|pour|droit|tribunal|mariage|plainte|succession|contrat)\b/i.test(text);
@@ -846,6 +900,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
         { provider: "cohere" },
         { provider: "gemini", model: GEMINI_FLASH_LITE },
         { provider: "groq" },
+        { provider: "openai" },
       ];
       console.log(`[QA] route=mixed(ar+fr)`);
     } else if (lang === "ar" || lang === "dar") {
@@ -854,6 +909,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
         { provider: "gemini", model: GEMINI_FLASH_LITE },
         { provider: "cohere" },
         { provider: "groq" },
+        { provider: "openai" },
       ];
       console.log(`[QA] route=${lang}`);
     } else if (lang === "fr") {
@@ -862,6 +918,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
         { provider: "gemini", model: GEMINI_FLASH },
         { provider: "cohere" },
         { provider: "groq" },
+        { provider: "openai" },
       ];
       console.log(`[QA] route=fr`);
     } else {
@@ -870,6 +927,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
         { provider: "groq" },
         { provider: "gemini", model: GEMINI_FLASH },
         { provider: "cohere" },
+        { provider: "openai" },
       ];
       console.log(`[QA] route=en`);
     }
@@ -879,6 +937,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
       if (step.provider === "gemini") content = await tryGemini(step.model);
       else if (step.provider === "cohere") content = await tryCohere();
       else if (step.provider === "groq") content = await tryGroq();
+      else if (step.provider === "openai") content = await tryOpenAI();
 
       if (content) {
         const suggestions = await suggestionsPromise;
@@ -895,6 +954,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
         gemini: summarizeProviderFailure(lastGeminiData),
         cohere: summarizeProviderFailure(fallbackData),
         groq: summarizeProviderFailure(lastGroqData),
+        openai: summarizeProviderFailure(lastOpenAIData),
       },
     });
   } catch (error) {
