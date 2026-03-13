@@ -733,7 +733,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
     let fallbackData = null;
 
     const geminiMessages = messages.map((m) => ({
-      role: m.role === "system" ? "user" : m.role,
+      role: m.role === "assistant" ? "model" : (m.role === "system" ? "user" : m.role),
       parts: [{ text: m.content }],
     }));
 
@@ -755,7 +755,7 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
         const data = await response.json();
         lastGeminiData = data;
         if (!response.ok) {
-          console.warn(`[QA] Gemini/${model} -> ${response.status}`);
+          console.warn(`[QA] Gemini/${model} -> ${response.status} | ${data?.error?.message || "unknown_error"}`);
           return null;
         }
         const content = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
