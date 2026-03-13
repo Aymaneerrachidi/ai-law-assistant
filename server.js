@@ -8,16 +8,12 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 8787;
-// Primary model (can be overridden via env).  Falls back to a rotation of
-// reliable free-tier models so a single rate-limited endpoint never blocks.
-const PRIMARY_MODEL = process.env.OPENROUTER_MODEL || null;
-const FREE_MODEL_ROTATION = [
-  "mistralai/mistral-7b-instruct:free",       // #1 — less popular, 99% success
-  "meta-llama/llama-3.1-8b-instruct:free",   // #2 — excellent quality, 98% success
-  "huggingface/zephyr-7b-beta:free",          // #3 — fast, 97% success
-  "openchat/openchat-7b:free",                // #4 — very fast fallback
-  "meta-llama/llama-3.2-3b-instruct:free",   // #5 — last resort
-];
+
+// ── Language-aware routing models ───────────────────────────────────────────
+const GEMINI_FLASH = "gemini-2.5-flash";
+const GEMINI_FLASH_LITE = "gemini-2.5-flash-lite";
+const COHERE_COMMAND_MODEL = "command-a-03-2025";
+const GROQ_LLAMA_33_70B = "llama-3.3-70b-versatile";
 
 const PRIMARY_SYSTEM_PROMPTS = {
   ar: `أنت مساعد قانوني مغربي متخصص في القانون المغربي، وتكتب بأسلوب قانوني أنيق وسلس.
@@ -562,6 +558,70 @@ function buildSystemPrompt(language, domain, userText, darijaIntent) {
   return `${primary}${legalCtxBlock}\n\nDomain instructions:\n${domainPrompt}${langOverride}${intentAddendum}`;
 }
 
+function getProviderErrorMessage(payload) {
+  if (!payload) return "";
+  if (typeof payload === "string") return payload;
+  if (typeof payload?.message === "string") return payload.message;
+  if (typeof payload?.error === "string") return payload.error;
+  if (typeof payload?.error?.message === "string") return payload.error.message;
+  if (Array.isArray(payload?.errors)) {
+    const firstMessage = payload.errors
+      .map((entry) => entry?.message || entry?.detail || entry?.error)
+      .find((entry) => typeof entry === "string" && entry.trim());
+    if (firstMessage) return firstMessage;
+  }
+  return "";
+}
+
+function isQuotaExceededError(payload) {
+  const message = getProviderErrorMessage(payload).toLowerCase();
+  if (!message) return false;
+
+  return [
+    "trial key",
+    "limited to",
+    "quota",
+    "credit",
+    "billing",
+    "payment required",
+    "exceeded",
+  ].some((needle) => message.includes(needle));
+}
+
+function summarizeProviderFailure(payload) {
+  if (!payload) return null;
+
+  const message = getProviderErrorMessage(payload);
+  return {
+    id: payload?.id || null,
+    code: payload?.code || payload?.error?.code || null,
+    message: message || "Provider returned no usable content",
+  };
+}
+
+function buildQaDegradedReply(language) {
+  const lang = ["ar", "fr", "en", "dar"].includes(language) ? language : "ar";
+  const replies = {
+    ar: "تعذر توليد جواب مفصل الآن لأن مزود الذكاء الاصطناعي الاحتياطي وصل إلى الحد المسموح به مؤقتاً. يمكنك المتابعة لاحقاً بعد تجديد الحصة أو تفعيل مزود بديل. هذه المعلومات للتوعية العامة ولا تعد استشارة قانونية ملزمة.",
+    fr: "Je ne peux pas générer une réponse détaillée pour le moment, car le fournisseur IA de secours a atteint sa limite temporaire. Vous pouvez réessayer après renouvellement du quota ou activation d'un autre fournisseur. Ces informations restent purement éducatives et ne remplacent pas un avis juridique.",
+    en: "I cannot generate a detailed answer right now because the backup AI provider has temporarily reached its quota. Please retry after renewing quota or enabling an alternative provider. This remains educational information and not formal legal advice.",
+    dar: "حالياً ما قدرتش نولد جواب مفصل حيث مزود الذكاء الاصطناعي الاحتياطي سالات ليه الحصة المؤقتة. تقدر تعاود المحاولة من بعد ملي يتجدد الكوطا ولا يتفعل مزود بديل. هاد المعلومات غير للتوعية القانونية وماشي استشارة قانونية رسمية.",
+  };
+
+  return replies[lang] || replies.ar;
+}
+
+function buildAnalysisDegradedReply(language) {
+  const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
+  const replies = {
+    ar: "التحليل القانوني النصي المفصل غير متاح مؤقتاً لأن مزود الذكاء الاصطناعي وصل إلى الحد المسموح به. مع ذلك ما زال بإمكان التطبيق عرض النص المستخرج والتصنيف التقريبي وبعض المؤشرات المستخرجة بالقواعد المحلية.",
+    fr: "L'analyse juridique rédigée n'est pas disponible temporairement, car le fournisseur IA a atteint sa limite. L'application peut toutefois continuer à afficher le texte extrait, une classification approximative et certains indicateurs issus des règles locales.",
+    en: "Detailed prose analysis is temporarily unavailable because the AI provider has reached its quota. The app can still show the extracted text, an approximate classification, and some indicators derived from local rules.",
+  };
+
+  return replies[lang] || replies.ar;
+}
+
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
@@ -580,11 +640,6 @@ app.get("/health", (_req, res) => {
 
 app.post("/api/moroccan-law-qa", async (req, res) => {
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "Missing OPENROUTER_API_KEY in .env" });
-    }
-
     const inputMessages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     if (inputMessages.length === 0) {
       return res.status(400).json({ error: "messages array is required" });
@@ -670,88 +725,177 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
       }
     }
 
-    // ── 2. OpenRouter — model rotation (skips 429/5xx automatically) ──────
-    const modelsToTry = PRIMARY_MODEL
-      ? [PRIMARY_MODEL, ...FREE_MODEL_ROTATION.filter(m => m !== PRIMARY_MODEL)]
-      : FREE_MODEL_ROTATION;
-
-    let orContent = null;
-    let lastOrData = null;
-    for (const candidate of modelsToTry) {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: candidate,
-          messages,
-          max_tokens: 2500,
-          temperature: 0.4,
-          top_p: 0.9,
-        }),
-      });
-
-      const data = await response.json();
-      lastOrData = data;
-
-      if (response.status === 429 || response.status >= 500) {
-        console.warn(`[QA] ${candidate} → ${response.status}, skip`);
-        continue;
-      }
-
-      const message = data?.choices?.[0]?.message;
-      const content = message?.content || message?.reasoning || null;
-      if (response.ok && content) {
-        orContent = content;
-        console.log(`[QA] answered by ${candidate}`);
-        break;
-      }
-
-        console.warn(`[QA] ${candidate} → empty content, skip`);
-    }
-
-    if (orContent) {
-      const suggestions = await suggestionsPromise;
-      return res.json({ content: orContent, suggestions });
-    }
-
-    console.warn(`[QA] all OpenRouter models exhausted → Cohere`);
-
-    // ── Fallback: Cohere command-a-03-2025 ────────────────────────────────
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const groqKey = process.env.GROQ_API_KEY;
     const cohereKey = process.env.COHERE_API_KEY;
-    if (cohereKey) {
+    let lastGeminiData = null;
+    let lastGroqData = null;
+    let fallbackData = null;
+
+    const geminiMessages = messages.map((m) => ({
+      role: m.role === "system" ? "user" : m.role,
+      parts: [{ text: m.content }],
+    }));
+
+    const tryGemini = async (model) => {
+      if (!geminiKey) return null;
       try {
-        const fallbackRes = await fetch("https://api.cohere.com/v2/chat", {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 18000);
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: geminiMessages,
+            generationConfig: { maxOutputTokens: 2500, temperature: 0.4 },
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const data = await response.json();
+        lastGeminiData = data;
+        if (!response.ok) {
+          console.warn(`[QA] Gemini/${model} -> ${response.status}`);
+          return null;
+        }
+        const content = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        if (content && content.length > 100) {
+          console.log(`[QA] answered by Gemini/${model} (${content.length} chars for ${lang})`);
+          return content;
+        }
+      } catch (e) {
+        console.warn(`[QA] Gemini/${model} fetch error | ${e.message}`);
+      }
+      return null;
+    };
+
+    const tryCohere = async () => {
+      if (!cohereKey) return null;
+      try {
+        const response = await fetch("https://api.cohere.com/v2/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${cohereKey}`,
           },
           body: JSON.stringify({
-            model: "command-a-03-2025",
+            model: COHERE_COMMAND_MODEL,
             messages,
             temperature: 0.4,
             max_tokens: 2500,
           }),
         });
-        const fallbackData = await fallbackRes.json();
-        const fallbackContent = fallbackData?.message?.content?.[0]?.text || null;
-        if (fallbackRes.ok && fallbackContent) {
-          const suggestions = await suggestionsPromise;
-          return res.json({ content: fallbackContent, suggestions });
+        const data = await response.json();
+        fallbackData = data;
+        const content = data?.message?.content?.[0]?.text || null;
+        if (response.ok && content) {
+          console.log(`[QA] answered by Cohere/${COHERE_COMMAND_MODEL} (${content.length} chars for ${lang})`);
+          return content;
         }
-        console.error(`[QA] Cohere failed | ${JSON.stringify(fallbackData).slice(0, 120)}`);
-      } catch (fallbackErr) {
-        console.error(`[QA] Cohere fetch error | ${fallbackErr.message}`);
+        if (isQuotaExceededError(data)) {
+          console.warn(`[QA] Cohere quota exhausted`);
+        }
+      } catch (e) {
+        console.warn(`[QA] Cohere fetch error | ${e.message}`);
+      }
+      return null;
+    };
+
+    const tryGroq = async () => {
+      if (!groqKey) return null;
+      try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${groqKey}`,
+          },
+          body: JSON.stringify({
+            model: GROQ_LLAMA_33_70B,
+            messages,
+            max_tokens: 2500,
+            temperature: 0.4,
+          }),
+        });
+        const data = await response.json();
+        lastGroqData = data;
+        if (!response.ok) {
+          console.warn(`[QA] Groq/${GROQ_LLAMA_33_70B} -> ${response.status}`);
+          return null;
+        }
+        const content = data?.choices?.[0]?.message?.content || null;
+        if (content && content.length > 100) {
+          console.log(`[QA] answered by Groq/${GROQ_LLAMA_33_70B} (${content.length} chars for ${lang})`);
+          return content;
+        }
+      } catch (e) {
+        console.warn(`[QA] Groq/${GROQ_LLAMA_33_70B} fetch error | ${e.message}`);
+      }
+      return null;
+    };
+
+    const text = `${lastUserMessage}`;
+    const hasArabic = /[\u0600-\u06FF]/.test(text);
+    const hasFrenchMarkers = /[àâçéèêëîïôûùüÿœæ]|\b(le|la|les|des|du|de|pour|droit|tribunal|mariage|plainte|succession|contrat)\b/i.test(text);
+    const isMixedArFr = (hasArabic && hasFrenchMarkers) || ((lang === "ar" || lang === "dar") && hasFrenchMarkers) || (lang === "fr" && hasArabic);
+
+    let routeSteps;
+    if (isMixedArFr) {
+      routeSteps = [
+        { provider: "gemini", model: GEMINI_FLASH },
+        { provider: "cohere" },
+        { provider: "gemini", model: GEMINI_FLASH_LITE },
+        { provider: "groq" },
+      ];
+      console.log(`[QA] route=mixed(ar+fr)`);
+    } else if (lang === "ar" || lang === "dar") {
+      routeSteps = [
+        { provider: "gemini", model: GEMINI_FLASH },
+        { provider: "gemini", model: GEMINI_FLASH_LITE },
+        { provider: "cohere" },
+        { provider: "groq" },
+      ];
+      console.log(`[QA] route=${lang}`);
+    } else if (lang === "fr") {
+      routeSteps = [
+        { provider: "gemini", model: GEMINI_FLASH_LITE },
+        { provider: "gemini", model: GEMINI_FLASH },
+        { provider: "cohere" },
+        { provider: "groq" },
+      ];
+      console.log(`[QA] route=fr`);
+    } else {
+      routeSteps = [
+        { provider: "gemini", model: GEMINI_FLASH_LITE },
+        { provider: "groq" },
+        { provider: "gemini", model: GEMINI_FLASH },
+        { provider: "cohere" },
+      ];
+      console.log(`[QA] route=en`);
+    }
+
+    for (const step of routeSteps) {
+      let content = null;
+      if (step.provider === "gemini") content = await tryGemini(step.model);
+      else if (step.provider === "cohere") content = await tryCohere();
+      else if (step.provider === "groq") content = await tryGroq();
+
+      if (content) {
+        const suggestions = await suggestionsPromise;
+        return res.json({ content, suggestions });
       }
     }
 
-    // Both providers failed
-    return res.status(502).json({
-      error: "Both primary and fallback AI providers failed. Please try again.",
-      details: data,
+    return res.status(200).json({
+      content: buildQaDegradedReply(lang),
+      suggestions: [],
+      degraded: true,
+      reason: "all_providers_exhausted",
+      details: {
+        gemini: summarizeProviderFailure(lastGeminiData),
+        cohere: summarizeProviderFailure(fallbackData),
+        groq: summarizeProviderFailure(lastGroqData),
+      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -864,6 +1008,15 @@ app.post("/api/analyze-document", async (req, res) => {
     const content = data?.message?.content?.[0]?.text || null;
 
     if (!response.ok || !content) {
+      if (isQuotaExceededError(data)) {
+        console.warn(`[Analyze] Cohere quota exhausted | ${getProviderErrorMessage(data).slice(0, 160)}`);
+        return res.json({
+          analysis: buildAnalysisDegradedReply(lang),
+          degraded: true,
+          reason: "cohere_quota_exhausted",
+        });
+      }
+
       return res.status(502).json({ error: "Cohere analysis failed", details: data });
     }
 
@@ -934,6 +1087,11 @@ Return ONLY this JSON object (no markdown, no explanation):
     const content = data?.message?.content?.[0]?.text || null;
 
     if (!response.ok || !content) {
+      if (isQuotaExceededError(data)) {
+        console.warn(`[Extract] Cohere quota exhausted | ${getProviderErrorMessage(data).slice(0, 160)}`);
+        return res.json({ fallback: true, reason: "cohere_quota_exhausted" });
+      }
+
       return res.status(502).json({ error: "Cohere extraction failed", details: data });
     }
 
@@ -1146,6 +1304,15 @@ Write in a friendly, direct style using "you" to address the reader. Avoid legal
     const data = await response.json();
     const content = data?.message?.content?.[0]?.text || null;
     if (!response.ok || !content) {
+      if (isQuotaExceededError(data)) {
+        console.warn(`[Explain] Cohere quota exhausted | ${getProviderErrorMessage(data).slice(0, 160)}`);
+        return res.json({
+          explanation: buildAnalysisDegradedReply(lang),
+          degraded: true,
+          reason: "cohere_quota_exhausted",
+        });
+      }
+
       return res.status(502).json({ error: "Cohere explanation failed", details: data });
     }
 
