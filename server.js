@@ -624,6 +624,271 @@ function buildAnalysisDegradedReply(language) {
   return replies[lang] || replies.ar;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── UNIVERSAL PROVIDER CALLER — Used by all endpoints ──────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function callAllProviders(
+  messages,
+  functionName = "GENERIC",
+  options = {}
+) {
+  const { language = "ar", maxTokens = 2500, temperature = 0.4, minLength = 50 } = options;
+  const lang = ["ar", "fr", "en", "dar"].includes(language) ? language : "ar";
+
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const groqKey = process.env.GROQ_API_KEY;
+  const cohereKey = process.env.COHERE_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+
+  let lastGeminiData = null;
+  let lastGroqData = null;
+  let lastCohereData = null;
+  let lastOpenAIData = null;
+
+  // ── Gemini ────────────────────────────────────────────────────────────────
+  const tryGemini = async (model) => {
+    if (!geminiKey) return null;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 18000);
+      const geminiMessages = messages.map((m) => ({
+        role: m.role === "assistant" ? "model" : (m.role === "system" ? "user" : m.role),
+        parts: [{ text: m.content }],
+      }));
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: geminiMessages,
+            generationConfig: { maxOutputTokens: maxTokens, temperature },
+          }),
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeoutId);
+      const data = await response.json();
+      lastGeminiData = data;
+      if (!response.ok) {
+        console.warn(`[${functionName}] Gemini/${model} -> ${response.status}`);
+        return null;
+      }
+      const content = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+      if (content && content.length > minLength) {
+        console.log(`[${functionName}] answered by Gemini/${model} (${content.length} chars for ${lang})`);
+        return { content, provider: "gemini", model };
+      }
+    } catch (e) {
+      console.warn(`[${functionName}] Gemini fetch error | ${e.message}`);
+    }
+    return null;
+  };
+
+  // ── Groq ──────────────────────────────────────────────────────────────────
+  const tryGroq = async () => {
+    if (!groqKey) return null;
+    try {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${groqKey}`,
+        },
+        body: JSON.stringify({
+          model: GROQ_LLAMA_33_70B,
+          messages,
+          max_tokens: maxTokens,
+          temperature,
+        }),
+      });
+      const data = await response.json();
+      lastGroqData = data;
+      if (!response.ok) {
+        console.warn(`[${functionName}] Groq/${GROQ_LLAMA_33_70B} -> ${response.status}`);
+        return null;
+      }
+      const content = data?.choices?.[0]?.message?.content || null;
+      if (content && content.length > minLength) {
+        console.log(`[${functionName}] answered by Groq/${GROQ_LLAMA_33_70B} (${content.length} chars for ${lang})`);
+        return { content, provider: "groq" };
+      }
+    } catch (e) {
+      console.warn(`[${functionName}] Groq fetch error | ${e.message}`);
+    }
+    return null;
+  };
+
+  // ── Cohere ────────────────────────────────────────────────────────────────
+  const tryCohere = async () => {
+    if (!cohereKey) return null;
+    try {
+      const response = await fetch("https://api.cohere.com/v2/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cohereKey}`,
+        },
+        body: JSON.stringify({
+          model: COHERE_COMMAND_MODEL,
+          messages,
+          temperature,
+          max_tokens: maxTokens,
+        }),
+      });
+      const data = await response.json();
+      lastCohereData = data;
+      const content = data?.message?.content?.[0]?.text || null;
+      if (response.ok && content && content.length > minLength) {
+        console.log(`[${functionName}] answered by Cohere/${COHERE_COMMAND_MODEL} (${content.length} chars for ${lang})`);
+        return { content, provider: "cohere" };
+      }
+      if (isQuotaExceededError(data)) {
+        console.warn(`[${functionName}] Cohere quota exhausted`);
+      }
+    } catch (e) {
+      console.warn(`[${functionName}] Cohere fetch error | ${e.message}`);
+    }
+    return null;
+  };
+
+  // ── OpenAI (two-tier: nano → mini) ────────────────────────────────────────
+  const tryOpenAI = async () => {
+    if (!openaiKey) return null;
+
+    const tryModelWithFallback = async (model) => {
+      try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openaiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            max_tokens: maxTokens,
+            temperature,
+          }),
+        });
+        const data = await response.json();
+        lastOpenAIData = data;
+        if (!response.ok) {
+          console.warn(
+            `[${functionName}] OpenAI/${model} -> ${response.status} | ${data?.error?.message || "unknown_error"}`
+          );
+          return null;
+        }
+        const content = data?.choices?.[0]?.message?.content || null;
+        if (content && content.length > minLength) {
+          console.log(`[${functionName}] answered by OpenAI/${model} (${content.length} chars for ${lang})`);
+          return { content, model };
+        }
+      } catch (e) {
+        console.warn(`[${functionName}] OpenAI/${model} fetch error | ${e.message}`);
+      }
+      return null;
+    };
+
+    // Primary: nano (cheapest)
+    let result = await tryModelWithFallback(OPENAI_MODEL);
+    if (result) return { content: result.content, provider: "openai-nano", model: OPENAI_MODEL };
+
+    // Fallback: mini (more capable if nano fails)
+    if (OPENAI_FALLBACK_MODEL && OPENAI_FALLBACK_MODEL !== OPENAI_MODEL) {
+      console.log(`[${functionName}] OpenAI/${OPENAI_MODEL} insufficient, trying fallback ${OPENAI_FALLBACK_MODEL}...`);
+      result = await tryModelWithFallback(OPENAI_FALLBACK_MODEL);
+      if (result) return { content: result.content, provider: "openai-mini", model: OPENAI_FALLBACK_MODEL };
+    }
+
+    return null;
+  };
+
+  // ── Determine routing based on language ────────────────────────────────────
+  const text = messages.find((m) => m.role === "user")?.content || "";
+  const hasArabic = /[\u0600-\u06FF]/.test(text);
+  const hasFrenchMarkers = /[àâçéèêëîïôûùüÿœæ]|\b(le|la|les|des|du|de|pour|droit|tribunal|mariage|plainte|succession|contrat)\b/i.test(
+    text
+  );
+  const isMixedArFr =
+    (hasArabic && hasFrenchMarkers) ||
+    ((lang === "ar" || lang === "dar") && hasFrenchMarkers) ||
+    (lang === "fr" && hasArabic);
+
+  let routeSteps;
+  if (isMixedArFr) {
+    routeSteps = [
+      { provider: "gemini", model: GEMINI_FLASH },
+      { provider: "cohere" },
+      { provider: "gemini", model: GEMINI_FLASH_LITE },
+      { provider: "groq" },
+      { provider: "openai" },
+    ];
+    console.log(`[${functionName}] route=mixed(ar+fr)`);
+  } else if (lang === "ar" || lang === "dar") {
+    routeSteps = [
+      { provider: "gemini", model: GEMINI_FLASH },
+      { provider: "gemini", model: GEMINI_FLASH_LITE },
+      { provider: "cohere" },
+      { provider: "groq" },
+      { provider: "openai" },
+    ];
+    console.log(`[${functionName}] route=${lang}`);
+  } else if (lang === "fr") {
+    routeSteps = [
+      { provider: "gemini", model: GEMINI_FLASH_LITE },
+      { provider: "gemini", model: GEMINI_FLASH },
+      { provider: "cohere" },
+      { provider: "groq" },
+      { provider: "openai" },
+    ];
+    console.log(`[${functionName}] route=fr`);
+  } else {
+    routeSteps = [
+      { provider: "gemini", model: GEMINI_FLASH_LITE },
+      { provider: "groq" },
+      { provider: "gemini", model: GEMINI_FLASH },
+      { provider: "cohere" },
+      { provider: "openai" },
+    ];
+    console.log(`[${functionName}] route=en`);
+  }
+
+  // ── Try each provider in order ────────────────────────────────────────────
+  for (const step of routeSteps) {
+    let result = null;
+    if (step.provider === "gemini") result = await tryGemini(step.model);
+    else if (step.provider === "cohere") result = await tryCohere();
+    else if (step.provider === "groq") result = await tryGroq();
+    else if (step.provider === "openai") result = await tryOpenAI();
+
+    if (result) {
+      return {
+        content: result.content,
+        provider: result.provider,
+        model: result.model,
+        success: true,
+      };
+    }
+  }
+
+  // ── All providers exhausted ───────────────────────────────────────────────
+  return {
+    content: buildAnalysisDegradedReply(lang),
+    provider: "degraded",
+    success: false,
+    degraded: true,
+    reason: "all_providers_exhausted",
+    details: {
+      gemini: summarizeProviderFailure(lastGeminiData),
+      cohere: summarizeProviderFailure(lastCohereData),
+      groq: summarizeProviderFailure(lastGroqData),
+      openai: summarizeProviderFailure(lastOpenAIData),
+    },
+  };
+}
+
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
 
@@ -1001,16 +1266,13 @@ app.post("/api/ocr", async (req, res) => {
   }
 });
 
-/* ─── Document Analysis (Cohere) ─── */
+/* ─── Document Analysis (Universal Providers) ─── */
 app.post("/api/analyze-document", async (req, res) => {
   try {
-    const cohereKey = process.env.COHERE_API_KEY;
-    if (!cohereKey) return res.status(500).json({ error: "Missing COHERE_API_KEY" });
-
     const { text, language, docType } = req.body;
     if (!text) return res.status(400).json({ error: "text is required" });
 
-    // Build type-specific instructions so the AI focuses on what matters for this document
+    // Build type-specific instructions 
     const typeInstructions = {
       ar: {
         court_report:   "الوثيقة محضر أو حكم قضائي. ركّز على: اسم المحكمة، رقم الملف، هوية القاضي، أسماء الأطراف، التهم الموجهة، منطوق الحكم، العقوبة المقررة، وآجال الطعن.",
@@ -1044,54 +1306,43 @@ app.post("/api/analyze-document", async (req, res) => {
     const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
     const typeHint = (typeInstructions[lang][docType] || typeInstructions[lang].general);
 
-    const prompt =
+    const analyzingPrompt =
       lang === "ar"
         ? `أنت محلل قانوني مغربي متخصص.\n\nتعليمات خاصة بنوع الوثيقة: ${typeHint}\n\nبعد التحليل قدّم بالترتيب:\n1. نوع الوثيقة القانوني المحدد\n2. ملخص المحتوى الأساسي\n3. المواد القانونية المذكورة ومرجعها في القانون المغربي\n4. النقاط القانونية المهمة\n5. توصيات عملية\n\nاكتب بأسلوب قانوني أنيق بدون تنسيق ماركداون.\n\nالوثيقة:\n${text}`
         : lang === "fr"
         ? `Vous êtes un analyste juridique marocain spécialisé.\n\nInstructions spécifiques au type de document: ${typeHint}\n\nAnalysez le document et fournissez dans l'ordre:\n1. Type juridique précis du document\n2. Résumé du contenu principal\n3. Articles de loi mentionnés et leur référence en droit marocain\n4. Points juridiques importants\n5. Recommandations pratiques\n\nRédigez en prose élégante sans formatage markdown.\n\nDocument:\n${text}`
         : `You are a specialized Moroccan legal analyst.\n\nDocument-type specific instructions: ${typeHint}\n\nAnalyze the document and provide in order:\n1. Precise legal document type\n2. Summary of key content\n3. Legal articles mentioned and their reference in Moroccan law\n4. Important legal points\n5. Practical recommendations\n\nWrite in elegant prose without markdown formatting.\n\nDocument:\n${text}`;
 
-    const response = await fetch("https://api.cohere.com/v2/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cohereKey}`,
-      },
-      body: JSON.stringify({
-        model: "command-a-03-2025",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-      }),
-    });
+    // Use universal providers
+    const result = await callAllProviders(
+      [{ role: "user", content: analyzingPrompt }],
+      "ANALYZE",
+      { language: lang, maxTokens: 2500, temperature: 0.3, minLength: 80 }
+    );
 
-    const data = await response.json();
-    const content = data?.message?.content?.[0]?.text || null;
-
-    if (!response.ok || !content) {
-      if (isQuotaExceededError(data)) {
-        console.warn(`[Analyze] Cohere quota exhausted | ${getProviderErrorMessage(data).slice(0, 160)}`);
-        return res.json({
-          analysis: buildAnalysisDegradedReply(lang),
-          degraded: true,
-          reason: "cohere_quota_exhausted",
-        });
-      }
-
-      return res.status(502).json({ error: "Cohere analysis failed", details: data });
+    if (result.success) {
+      return res.json({ 
+        analysis: result.content,
+        provider: result.provider,
+        model: result.model,
+      });
     }
 
-    return res.json({ analysis: content });
+    // Degraded response
+    return res.json({
+      analysis: result.content,
+      provider: result.provider,
+      degraded: true,
+      reason: result.reason,
+    });
   } catch (error) {
     return res.status(500).json({ error: "Analysis error", details: error.message });
   }
 });
 
-/* ─── LLM Structured Extraction ─── */
+/* ─── LLM Structured Extraction (Universal Providers) ─── */
 app.post("/api/extract-with-llm", async (req, res) => {
   try {
-    const cohereKey = process.env.COHERE_API_KEY;
-    if (!cohereKey) return res.status(500).json({ error: "Missing COHERE_API_KEY" });
-
     const { text, language } = req.body;
     if (!text) return res.status(400).json({ error: "text is required" });
 
@@ -1129,31 +1380,19 @@ Return ONLY this JSON object (no markdown, no explanation):
   }
 }`;
 
-    const response = await fetch("https://api.cohere.com/v2/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cohereKey}`,
-      },
-      body: JSON.stringify({
-        model: "command-a-03-2025",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1,
-        max_tokens: 900,
-      }),
-    });
+    // Use universal providers
+    const result = await callAllProviders(
+      [{ role: "user", content: prompt }],
+      "EXTRACT",
+      { language: lang, maxTokens: 900, temperature: 0.1, minLength: 20 }
+    );
 
-    const data = await response.json();
-    const content = data?.message?.content?.[0]?.text || null;
-
-    if (!response.ok || !content) {
-      if (isQuotaExceededError(data)) {
-        console.warn(`[Extract] Cohere quota exhausted | ${getProviderErrorMessage(data).slice(0, 160)}`);
-        return res.json({ fallback: true, reason: "cohere_quota_exhausted" });
-      }
-
-      return res.status(502).json({ error: "Cohere extraction failed", details: data });
+    if (!result.success) {
+      console.warn(`[Extract] Fallback triggered: ${result.reason}`);
+      return res.json({ fallback: true, reason: result.reason });
     }
+
+    const content = result.content;
 
     // Strip markdown code fences if the model wraps the JSON
     let parsed;
@@ -1162,7 +1401,8 @@ Return ONLY this JSON object (no markdown, no explanation):
       if (!jsonMatch) throw new Error("No JSON object found in model response");
       parsed = JSON.parse(jsonMatch[0]);
     } catch (e) {
-      return res.status(422).json({ error: "JSON parse failed", raw: content.slice(0, 400) });
+      console.warn(`[Extract] JSON parse failed, returning fallback`);
+      return res.json({ fallback: true, reason: "json_parse_failed", provider: result.provider });
     }
 
     // Validate docType
@@ -1189,6 +1429,8 @@ Return ONLY this JSON object (no markdown, no explanation):
     parsed.confidence = Number.isFinite(parsed.confidence)
       ? Math.min(100, Math.max(0, Math.round(parsed.confidence)))
       : null;
+    
+    parsed.provider = result.provider;
 
     return res.json(parsed);
   } catch (error) {
@@ -1196,12 +1438,9 @@ Return ONLY this JSON object (no markdown, no explanation):
   }
 });
 
-/* ─── Legal Concept Explainer ─── */
+/* ─── Legal Concept Explainer (Universal Providers) ─── */
 app.post("/api/explain-concept", async (req, res) => {
   try {
-    const cohereKey = process.env.COHERE_API_KEY;
-    if (!cohereKey) return res.status(500).json({ error: "Missing COHERE_API_KEY" });
-
     const { concept, language, level, style, background } = req.body;
     if (!concept || typeof concept !== "string" || concept.trim().length === 0)
       return res.status(400).json({ error: "concept is required" });
@@ -1350,43 +1589,32 @@ The single most important thing to remember.
 
 Write in a friendly, direct style using "you" to address the reader. Avoid legal jargon unless immediately explained.`;
 
-    const response = await fetch("https://api.cohere.com/v2/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${cohereKey}` },
-      body: JSON.stringify({
-        model: "command-a-03-2025",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.5,
-        max_tokens: 2800,
-      }),
-    });
+    // Use universal providers
+    const result = await callAllProviders(
+      [{ role: "user", content: prompt }],
+      "EXPLAIN",
+      { language: lang, maxTokens: 2800, temperature: 0.5 }
+    );
 
-    const data = await response.json();
-    const content = data?.message?.content?.[0]?.text || null;
-    if (!response.ok || !content) {
-      if (isQuotaExceededError(data)) {
-        console.warn(`[Explain] Cohere quota exhausted | ${getProviderErrorMessage(data).slice(0, 160)}`);
-        return res.json({
-          explanation: buildAnalysisDegradedReply(lang),
-          degraded: true,
-          reason: "cohere_quota_exhausted",
-        });
-      }
-
-      return res.status(502).json({ error: "Cohere explanation failed", details: data });
+    if (!result.success) {
+      console.warn(`[Explain] Fallback triggered: ${result.reason}`);
+      return res.json({
+        explanation: buildAnalysisDegradedReply(lang),
+        degraded: true,
+        reason: result.reason,
+        provider: result.provider,
+      });
     }
 
-    return res.json({ explanation: content });
+    return res.json({ explanation: result.content, provider: result.provider });
   } catch (error) {
     return res.status(500).json({ error: "Explanation error", details: error.message });
   }
 });
 
-/* ─── Contract Drafting ─── */
+/* ─── Contract Drafting (Universal Providers) ─── */
 app.post("/api/draft-contract", async (req, res) => {
   try {
-    const cohereKey = process.env.COHERE_API_KEY;
-    if (!cohereKey) return res.status(500).json({ error: "Missing COHERE_API_KEY" });
     const { contractType, params, language } = req.body;
     if (!contractType) return res.status(400).json({ error: "contractType required" });
     const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
@@ -1402,17 +1630,25 @@ app.post("/api/draft-contract", async (req, res) => {
       : lang === "fr"
       ? `Vous êtes un avocat marocain spécialisé. Rédigez un ${typeLabel} complet et légalement valide selon la loi marocaine à partir des données suivantes:\n\n${paramStr || "(données incomplètes)"}\n\nLe contrat doit:\n- Inclure un préambule juridique\n- Mentionner les parties et leurs coordonnées\n- Contenir toutes les clauses obligatoires selon le droit marocain\n- Référencer les articles de loi pertinents\n- Inclure des clauses de résiliation et de règlement des litiges\n- Se terminer par des blocs de signature\n- Ne contenir aucune partie supprimée, masquée ou [supprimé] ou marques de suppression\n- Être complet et détaillé sans omission d'informations\n\nRédigez le contrat complet prêt à imprimer:`
       : `You are a Moroccan legal specialist. Draft a complete, legally sound ${typeLabel} under Moroccan law using these details:\n\n${paramStr || "(incomplete data)"}\n\nThe contract must:\n- Include a legal preamble\n- Name and describe both parties\n- Contain all mandatory clauses under Moroccan law\n- Reference relevant legal articles\n- Include termination and dispute resolution clauses\n- End with signature blocks\n- Contain no redacted, blacked-out, or [REDACTED] sections or redaction marks\n- Be complete and detailed without omitting any information\n\nWrite the complete contract ready to print:`;
-    const response = await fetch("https://api.cohere.com/v2/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${cohereKey}` },
-      body: JSON.stringify({ model: "command-a-03-2025", messages: [{ role: "user", content: prompt }], temperature: 0.3, max_tokens: 3000 }),
-    });
-    const data = await response.json();
-    const content = data?.message?.content?.[0]?.text || null;
-    if (!response.ok || !content) return res.status(502).json({ error: "Cohere draft failed", details: data });
-    
+    // Use universal providers
+    const result = await callAllProviders(
+      [{ role: "user", content: prompt }],
+      "DRAFT",
+      { language: lang, maxTokens: 3000, temperature: 0.3 }
+    );
+
+    if (!result.success) {
+      console.warn(`[Draft] Fallback triggered: ${result.reason}`);
+      return res.json({
+        contract: buildAnalysisDegradedReply(lang),
+        degraded: true,
+        reason: result.reason,
+        provider: result.provider,
+      });
+    }
+
     // Remove any redactions or blacked-out sections
-    const cleanedContract = content
+    const cleanedContract = result.content
       .replace(/\[[^\]]*(redact|محذوف|supprim|delete)[^\]]*\]/gi, '') // Remove [REDACTED], [محذوف], etc.
       .replace(/\[.*?\]/g, '') // Remove any remaining bracketed text that might be redactions
       .replace(/█+/g, '') // Remove black box characters
@@ -1422,7 +1658,7 @@ app.post("/api/draft-contract", async (req, res) => {
       .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
       .trim();
     
-    return res.json({ contract: cleanedContract });
+    return res.json({ contract: cleanedContract, provider: result.provider });
   } catch (error) {
     return res.status(500).json({ error: "Draft error", details: error.message });
   }
