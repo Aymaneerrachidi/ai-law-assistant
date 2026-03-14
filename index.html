@@ -1,9 +1,47 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Adala App - عدالة</title>
+
+    <!-- ── Primary Meta ── -->
+    <title>AdalaApp عدالة | مساعد قانوني ذكي للقانون المغربي — Assistant Juridique IA Maroc</title>
+    <meta name="description" content="عدالة — مساعد قانوني ذكي يغطي القانون المغربي بالعربية والفرنسية والدارجة والإنجليزية. مدونة الأسرة، القانون الجنائي، قانون الشغل، العقود وأكثر. Assistant juridique IA pour le droit marocain." />
+    <meta name="keywords" content="قانون مغربي, مدونة الأسرة, القانون الجنائي المغربي, قانون الشغل المغربي, loi marocaine, code du travail maroc, droit penal maroc, Moroccan law, moudawana, adalaapp, عدالة, محامي المغرب, القانون المغربي بالدارجة" />
+    <meta name="author" content="AdalaApp" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://adalaapp.com/" />
+
+    <!-- ── Hreflang (multilingual) ── -->
+    <link rel="alternate" hreflang="ar-MA"   href="https://adalaapp.com/ar/" />
+    <link rel="alternate" hreflang="fr-MA"   href="https://adalaapp.com/fr/" />
+    <link rel="alternate" hreflang="en"      href="https://adalaapp.com/en/" />
+    <link rel="alternate" hreflang="x-default" href="https://adalaapp.com/ar/" />
+
+    <!-- ── Open Graph (Facebook / WhatsApp / LinkedIn) ── -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:site_name"   content="AdalaApp — عدالة" />
+    <meta property="og:title"       content="AdalaApp عدالة | مساعد قانوني ذكي للقانون المغربي" />
+    <meta property="og:description" content="اطرح سؤالك القانوني واحصل على إجابة دقيقة مستندة إلى التشريع المغربي. يغطي مدونة الأسرة، القانون الجنائي، قانون الشغل، العقود والمزيد." />
+    <meta property="og:url"         content="https://adalaapp.com/" />
+    <meta property="og:image"       content="https://adalaapp.com/img/og-cover.png" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt"   content="AdalaApp — مساعد قانوني ذكي للقانون المغربي" />
+    <meta property="og:locale"      content="ar_MA" />
+    <meta property="og:locale:alternate" content="fr_MA" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- ── Twitter / X Card ── -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:site"        content="@adalaapp" />
+    <meta name="twitter:creator"     content="@adalaapp" />
+    <meta name="twitter:title"       content="AdalaApp عدالة | مساعد قانوني ذكي للقانون المغربي" />
+    <meta name="twitter:description" content="اطرح سؤالك القانوني واحصل على إجابة دقيقة مستندة إلى التشريع المغربي — بالعربية والفرنسية والدارجة والإنجليزية." />
+    <meta name="twitter:image"       content="https://adalaapp.com/img/og-cover.png" />
+    <meta name="twitter:image:alt"   content="AdalaApp — مساعد قانوني ذكي للقانون المغربي" />
+
+    <!-- ── PWA / Mobile ── -->
     <link rel="icon" type="image/png" href="/img/logo.png" />
     <link rel="apple-touch-icon" href="/img/logo.png" />
     <meta name="theme-color" content="#1a1510" />
@@ -12,13 +50,177 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="AdalaApp" />
-    <meta property="og:title" content="Adala App - عدالة" />
-    <meta property="og:description" content="مساعد قانوني متخصص في القانون المغربي" />
-    <meta property="og:image" content="/img/logo.png" />
-    <meta property="og:type" content="website" />
+
+    <!-- ── Schema.org JSON-LD ── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://adalaapp.com/#organization",
+          "name": "AdalaApp",
+          "alternateName": ["عدالة", "Adala App"],
+          "url": "https://adalaapp.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://adalaapp.com/img/logo.png",
+            "width": 512,
+            "height": 512
+          },
+          "description": "AI-powered Moroccan legal assistant covering 65+ laws in Arabic, French, Darija, and English",
+          "areaServed": {
+            "@type": "Country",
+            "name": "Morocco",
+            "sameAs": "https://www.wikidata.org/wiki/Q1028"
+          },
+          "sameAs": [
+            "https://www.linkedin.com/company/adalaapp",
+            "https://twitter.com/adalaapp",
+            "https://www.facebook.com/adalaapp"
+          ]
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://adalaapp.com/#webapp",
+          "name": "AdalaApp — عدالة",
+          "url": "https://adalaapp.com",
+          "applicationCategory": "LegalService",
+          "operatingSystem": "Web, iOS, Android",
+          "browserRequirements": "Requires JavaScript",
+          "description": "AI-powered Moroccan legal assistant covering the Family Code (Moudawana), Criminal Law, Labor Law, Contracts, and 65+ laws in Arabic, French, Darija, and English. Features document analysis, concept explainer, sentence estimator, and legal deadline calculator.",
+          "inLanguage": ["ar", "fr", "en"],
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "MAD"
+          },
+          "featureList": [
+            "AI legal Q&A in Arabic, French, Darija, English",
+            "Legal document analysis (PDF & image)",
+            "Moroccan legal concept explainer",
+            "Criminal sentence estimator",
+            "Legal deadline calculator",
+            "65+ Moroccan laws covered"
+          ],
+          "publisher": { "@id": "https://adalaapp.com/#organization" }
+        },
+        {
+          "@type": "LegalService",
+          "@id": "https://adalaapp.com/#legalservice",
+          "name": "AdalaApp — مساعد قانوني مغربي",
+          "alternateName": "Assistant Juridique Marocain IA",
+          "url": "https://adalaapp.com",
+          "areaServed": {
+            "@type": "Country",
+            "name": "Morocco"
+          },
+          "serviceType": "Legal Information & AI Legal Assistance",
+          "availableLanguage": [
+            { "@type": "Language", "name": "Arabic", "alternateName": "ar" },
+            { "@type": "Language", "name": "French", "alternateName": "fr" },
+            { "@type": "Language", "name": "English", "alternateName": "en" }
+          ],
+          "description": "Free AI legal assistant specialized in Moroccan law. Covers Moudawana (Family Code), Code Pénal, Code du Travail, DOC (Obligations & Contracts), and 65+ laws.",
+          "provider": { "@id": "https://adalaapp.com/#organization" }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://adalaapp.com/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "ما هي مدونة الأسرة في المغرب؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "مدونة الأسرة (المعروفة بالمدونة) هي القانون الذي يُنظّم شؤون الزواج والطلاق والحضانة والإرث في المغرب، وقد خضعت لإصلاح جوهري عام 2004 يكفل حقوقاً أوسع للمرأة."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "كيفاش نطلق فالمغرب؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "فالمغرب، الطلاق كيتم قدام القاضي. الرجل عندو حق يطلق (طلاق رجعي)، والمرأة تقدر تطلب الطلاق بالخلع (ترد الصداق) أو بحكم قضائي إلا كانت عندها أسباب كالضرر أو غياب الزوج أو عدم النفقة."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Quels sont les droits des salariés au Maroc?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Le Code du Travail marocain (Loi 65-99) garantit aux salariés : le droit au contrat de travail écrit, au SMIG (salaire minimum), aux congés payés (18 jours/an minimum), à la protection contre le licenciement abusif, aux indemnités de départ, et à la couverture CNSS."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What is the Moudawana?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The Moudawana is Morocco's Family Code (reformed in 2004). It governs marriage, divorce, child custody, and inheritance. The reform raised the minimum marriage age to 18, gave women the right to initiate divorce, and required all marriages to be registered in court."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "ما هي عقوبة السرقة في القانون المغربي؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "وفق الفصل 505 من القانون الجنائي المغربي، تتراوح عقوبة السرقة البسيطة بين سنة وخمس سنوات سجناً، مع غرامة مالية. وفي حالة السرقة الموصوفة (باستخدام السلاح أو من طرف عصابة)، قد تصل العقوبة إلى عشر سنوات أو أكثر."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Comment créer une SARL au Maroc?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Pour créer une SARL au Maroc, il faut : rédiger les statuts, déposer le capital social (minimum 1 MAD symbolique depuis 2018), s'inscrire au Registre du Commerce, obtenir un identifiant fiscal, s'affilier à la CNSS, et publier un avis de constitution au Bulletin Officiel. La procédure peut se faire en ligne via le Centre Régional d'Investissement (CRI)."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "شنو خاصني ندير إلا طردوني من الخدمة؟",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "إلا طردوك من الخدمة بلا سبب معقول، عندك الحق تشكي للمحكمة الاجتماعية. مدونة الشغل المغربية كتعطيك الحق في التعويض عن الفصل التعسفي. خاصك تشكي فمدة شهر من يوم ما عرفت بالفصل."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How to file for divorce in Morocco as a foreigner?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Foreign nationals can file for divorce in Morocco if the marriage was registered there or if both parties reside in Morocco. The procedure follows the Moudawana (Family Code). You must file at the Family Court (Tribunal de la Famille) in your jurisdiction. An interpreter may be requested if needed."
+              }
+            }
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://adalaapp.com/#website",
+          "url": "https://adalaapp.com",
+          "name": "AdalaApp — عدالة",
+          "description": "مساعد قانوني ذكي للقانون المغربي",
+          "inLanguage": ["ar", "fr", "en"],
+          "publisher": { "@id": "https://adalaapp.com/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://adalaapp.com/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- ── Fonts ── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Josefin+Sans:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- ── External Scripts ── -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -26,6 +228,49 @@
   </head>
   <body style="margin:0;background:#1a1510">
     <div id="root"></div>
+
+    <main id="seo-homepage-content" style="background:#fff;color:#141414;padding:40px 20px 64px;line-height:1.85;font-family:Cairo,Arial,sans-serif">
+      <div style="max-width:980px;margin:0 auto">
+        <h1 style="margin:0 0 14px;font-size:clamp(1.6rem,2.7vw,2.2rem)">عدالة | منصة قانونية مغربية لفهم الحقوق والإجراءات</h1>
+        <p style="margin:0 0 18px;font-size:1.04rem">عدالة منصة للتوعية القانونية في المغرب، تساعد الأفراد والأسر والمقاولات الصغيرة على فهم القانون المغربي بلغة واضحة. نوفر محتوى عملياً حول قانون الأسرة، قانون الشغل، القانون الجنائي، القانون التجاري، وقضايا العقار والكراء، مع دعم العربية والفرنسية والدارجة والإنجليزية.</p>
+
+        <section style="margin:26px 0">
+          <h2 style="margin:0 0 10px">ابدأ من صفحات الدليل الأساسية</h2>
+          <ul style="padding-inline-start:20px;margin:0;display:grid;gap:8px">
+            <li><a href="/ar/labor-law/" style="color:#7a5a14">قانون الشغل في المغرب: العقد، الأجر، الفصل، التعويض</a></li>
+            <li><a href="/ar/family-law/" style="color:#7a5a14">قانون الأسرة: الزواج، الطلاق، النفقة، الحضانة</a></li>
+            <li><a href="/fr/droit-travail/" style="color:#7a5a14">Droit du travail marocain</a></li>
+            <li><a href="/fr/droit-famille/" style="color:#7a5a14">Droit de la famille marocain</a></li>
+            <li><a href="/darija/khadma/" style="color:#7a5a14">حقوقك فالخدمة بالدارجة</a></li>
+            <li><a href="/darija/osra/" style="color:#7a5a14">قانون الأسرة بالدارجة</a></li>
+          </ul>
+        </section>
+
+        <section style="margin:26px 0">
+          <h2 style="margin:0 0 10px">المجالات القانونية التي تغطيها عدالة</h2>
+          <p style="margin:0 0 12px">نغطي أكثر الأسئلة القانونية شيوعاً في المغرب: عقود الشغل، الفصل التعسفي، النزاعات الأسرية، مستحقات النفقة، الحضانة، المسؤولية الجنائية، العقود التجارية، الكراء، والنزاعات العقارية. المحتوى مبني على التشريع المغربي ويهدف لتبسيط الفهم قبل اتخاذ أي خطوة عملية.</p>
+          <p style="margin:0">يمكنك قراءة الدليل أولاً، ثم طرح سؤالك الخاص عبر التطبيق للحصول على توجيه أوضح حسب المعطيات التي تقدمها.</p>
+        </section>
+
+        <section style="margin:26px 0">
+          <h2 style="margin:0 0 10px">نسخ اللغة المتاحة</h2>
+          <p style="margin:0 0 10px">اختر اللغة التي تناسبك:</p>
+          <p style="margin:0">
+            <a href="/ar/" style="color:#7a5a14">العربية</a>
+            · <a href="/fr/" style="color:#7a5a14">Français</a>
+            · <a href="/darija/" style="color:#7a5a14">الدارجة</a>
+            · <a href="/en/" style="color:#7a5a14">English</a>
+            · <a href="/" style="color:#7a5a14">فتح التطبيق</a>
+          </p>
+        </section>
+
+        <section style="margin:26px 0">
+          <h2 style="margin:0 0 10px">تنبيه مهم</h2>
+          <p style="margin:0">المحتوى المنشور في عدالة هو للتوعية القانونية العامة ولا يشكل استشارة قانونية ملزمة. عند وجود نزاع فعلي أو آجال قضائية قريبة، يُنصح بالاستعانة بمحامٍ مغربي مختص.</p>
+        </section>
+      </div>
+    </main>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
