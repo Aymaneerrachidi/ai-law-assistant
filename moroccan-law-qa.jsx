@@ -572,9 +572,22 @@ if (typeof document !== "undefined" && !document.getElementById(styleId)) {
   const s = document.createElement("style");
   s.id = styleId;
   s.textContent = `
+    :root {
+      --p-bg:#1a1510; --p-bgCard:#231e17; --p-bgInput:#2a241c; --p-bgHover:#2f2820;
+      --p-gold:#c8a45e; --p-goldMuted:#a08346; --p-goldLight:#e0c97a;
+      --p-text:#e8e0d4; --p-textMid:#b5a999; --p-textDim:#8a7e72;
+      --p-border:#35302a; --p-borderLight:#4a4238;
+      --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
+      --sp-6:24px; --sp-8:32px; --sp-12:48px;
+      --easing:cubic-bezier(0.4,0,0.2,1); --spring:cubic-bezier(0.22,1,0.36,1);
+    }
     @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes slideInUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes msgIn { from{opacity:0;transform:translateY(10px) scale(0.98)} to{opacity:1;transform:translateY(0) scale(1)} }
     @keyframes dots { 0%,80%,100%{opacity:.3} 40%{opacity:1} }
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    @keyframes pulseGold { 0%,100%{box-shadow:0 0 0 0 #c8a45e00} 50%{box-shadow:0 0 0 4px #c8a45e20} }
+    @keyframes scaleIn { from{opacity:0;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }
     @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
     ::placeholder{color:#8a7e72!important;opacity:1!important}
     input::-webkit-input-placeholder{color:#8a7e72!important}
@@ -587,6 +600,24 @@ if (typeof document !== "undefined" && !document.getElementById(styleId)) {
     .msg-action-btn:hover{color:#c8a45e!important;border-color:#c8a45e50!important}
     .hide-scrollbar::-webkit-scrollbar{display:none}
     .hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+    .tab-panel{animation:slideInUp 240ms var(--spring) both}
+    .btn-press{transition:transform 120ms var(--easing),background 200ms var(--easing),color 200ms var(--easing),box-shadow 200ms var(--easing)}
+    .btn-press:active{transform:scale(0.96)!important}
+    .btn-primary{transition:all 250ms var(--easing)}
+    .btn-primary:active{transform:scale(0.97)}
+    .btn-primary:hover:not(:disabled){box-shadow:0 0 0 2px #c8a45e25,0 2px 12px #c8a45e18}
+    .card{transition:box-shadow 200ms var(--easing),border-color 200ms var(--easing),background 200ms var(--easing)}
+    .card:hover{box-shadow:0 6px 28px #0008,0 1px 4px #c8a45e10!important}
+    .skeleton-line{
+      background:linear-gradient(90deg,#2a241c 25%,#35302a 50%,#2a241c 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.4s ease infinite;
+      border-radius:5px;
+    }
+    .msg-bubble{transition:border-color 200ms var(--easing),box-shadow 200ms var(--easing)}
+    .msg-bubble:hover{box-shadow:0 2px 16px #0005}
+    .input-field{transition:border-color 200ms var(--easing),box-shadow 200ms var(--easing)}
+    .input-field:focus{border-color:#a08346!important;box-shadow:0 0 0 3px #c8a45e14,inset 0 1px 0 #c8a45e08!important}
   `;
   document.head.appendChild(s);
 }
@@ -1562,8 +1593,9 @@ export default function MoroccanLawQA() {
         display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "center", justifyContent: "space-between",
         padding: isMobile ? "10px 12px 8px" : "14px 32px",
         gap: isMobile ? 10 : 0,
-        background: "rgba(26,21,16,0.92)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-        borderBottom: `1px solid ${P.border}`,
+        background: "rgba(26,21,16,0.94)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
+        borderBottom: `1px solid ${P.gold}20`,
+        boxShadow: `0 4px 24px #0008, 0 1px 0 #c8a45e12`,
       }}>
         {/* Top row: logo + language */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1630,7 +1662,7 @@ export default function MoroccanLawQA() {
 
         {mode === "doc" ? (
           /* ── Document Analysis View ── */
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 20px" : "40px 0 40px", animation: `fadeUp 400ms ${E} forwards` }}>
+          <div key="doc" className="tab-panel" style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 20px" : "40px 0 40px" }}>
             {docState === "idle" && !extractedText ? (
               /* Upload area */
               <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
@@ -1701,10 +1733,13 @@ export default function MoroccanLawQA() {
                 {/* Loading states */}
                 {(docState === "extracting" || docState === "analyzing") && (
                   <div style={{
-                    padding: "32px", textAlign: "center",
+                    padding: "28px 32px",
                     background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 12,
+                    boxShadow: `0 4px 24px #0006`,
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 14,
+                    animation: `scaleIn 250ms cubic-bezier(0.22,1,0.36,1) both`,
                   }}>
-                    <div style={{ display: "inline-flex", gap: 6, marginBottom: 14 }}>
+                    <div style={{ display: "inline-flex", gap: 6 }}>
                       {[0, 1, 2].map((d) => (
                         <span key={d} style={{ width: 8, height: 8, borderRadius: "50%", background: P.gold, animation: `dots 1.4s infinite ${d * 0.2}s` }} />
                       ))}
@@ -1712,6 +1747,11 @@ export default function MoroccanLawQA() {
                     <p style={{ fontSize: 14, color: P.textMid, margin: 0 }}>
                       {docState === "extracting" ? t.extracting : t.analyzing}
                     </p>
+                    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div className="skeleton-line" style={{ height: 11, width: "78%" }} />
+                      <div className="skeleton-line" style={{ height: 11, width: "55%" }} />
+                      <div className="skeleton-line" style={{ height: 11, width: "68%" }} />
+                    </div>
                   </div>
                 )}
 
@@ -1737,10 +1777,11 @@ export default function MoroccanLawQA() {
 
                 {/* Analysis result */}
                 {analysis && (
-                  <div style={{
+                  <div className="card" style={{
                     background: P.bgCard, border: `1px solid ${P.gold}30`, borderRadius: 12,
                     overflow: "hidden",
-                    animation: `fadeUp 400ms ${E} forwards`,
+                    animation: `slideInUp 300ms cubic-bezier(0.22,1,0.36,1) forwards`,
+                    boxShadow: `0 6px 32px #0007, 0 1px 4px #c8a45e10`,
                   }}>
                     <div style={{ padding: "12px 16px", borderBottom: `1px solid ${P.gold}25`, display: "flex", alignItems: "center", gap: 8 }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -1881,7 +1922,7 @@ export default function MoroccanLawQA() {
           </div>
         ) : mode === "sentence" ? (
           /* ── Sentence Estimator View ── */
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 40px" : "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
+          <div key="sentence" className="tab-panel" style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 40px" : "40px 0 60px" }}>
             {sentenceResult ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 10 }}>
@@ -1979,14 +2020,15 @@ export default function MoroccanLawQA() {
                   </div>
                 </div>
                 <button onClick={estimateSentence} disabled={!sentenceCrime}
-                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: sentenceCrime ? P.gold : P.bgHover, color: sentenceCrime ? P.bg : P.textDim, border: "none", borderRadius: 12, cursor: sentenceCrime ? "pointer" : "not-allowed", transition: `all 250ms ${E}` }}
+                  className="btn-primary"
+                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: sentenceCrime ? P.gold : P.bgHover, color: sentenceCrime ? P.bg : P.textDim, border: "none", borderRadius: 12, cursor: sentenceCrime ? "pointer" : "not-allowed", boxShadow: sentenceCrime ? `0 4px 20px #c8a45e30` : "none" }}
                 >{t.sentenceBtn}</button>
               </div>
             )}
           </div>
         ) : mode === "deadline" ? (
           /* ── Legal Deadline Calculator View ── */
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 40px" : "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
+          <div key="deadline" className="tab-panel" style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 40px" : "40px 0 60px" }}>
             {deadlineResult ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: P.bgCard, border: `1px solid ${P.border}`, borderRadius: 10 }}>
@@ -2056,14 +2098,15 @@ export default function MoroccanLawQA() {
                   </div>
                 </div>
                 <button onClick={calcDeadlines} disabled={!deadlineCaseType}
-                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: deadlineCaseType ? P.gold : P.bgHover, color: deadlineCaseType ? P.bg : P.textDim, border: "none", borderRadius: 12, cursor: deadlineCaseType ? "pointer" : "not-allowed", transition: `all 250ms ${E}` }}
+                  className="btn-primary"
+                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: deadlineCaseType ? P.gold : P.bgHover, color: deadlineCaseType ? P.bg : P.textDim, border: "none", borderRadius: 12, cursor: deadlineCaseType ? "pointer" : "not-allowed", boxShadow: deadlineCaseType ? `0 4px 20px #c8a45e30` : "none" }}
                 >{t.deadlineBtn}</button>
               </div>
             )}
           </div>
         ) : mode === "learn" ? (
           /* ── Legal Concepts Learn View ── */
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 40px" : "40px 0 60px", animation: `fadeUp 400ms ${E} forwards` }}>
+          <div key="learn" className="tab-panel" style={{ flex: 1, display: "flex", flexDirection: "column", padding: isMobile ? "20px 0 40px" : "40px 0 60px" }}>
             {learnResult ? (
               /* ── Result ── */
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -2072,7 +2115,7 @@ export default function MoroccanLawQA() {
                   <span style={{ fontSize: 13, color: P.text, fontFamily: ff, flex: 1 }}>{learnCustom.trim() || learnConcepts[language].find(c => c.id === learnConcept)?.label || learnConcept}</span>
                   <button onClick={() => { setLearnResult(""); setLearnCustom(""); setLearnConcept(""); }} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, background: "transparent", color: P.gold, border: `1px solid ${P.gold}40`, borderRadius: 6, cursor: "pointer", fontFamily: ff }}>{t.learnReset}</button>
                 </div>
-                <div style={{ background: P.bgCard, border: `1px solid ${P.gold}30`, borderRadius: 12, overflow: "hidden", animation: `fadeUp 400ms ${E} forwards` }}>
+                <div className="card" style={{ background: P.bgCard, border: `1px solid ${P.gold}30`, borderRadius: 12, overflow: "hidden", animation: `slideInUp 300ms cubic-bezier(0.22,1,0.36,1) forwards`, boxShadow: `0 6px 32px #0007, 0 1px 4px #c8a45e10` }}>
                   <div style={{ padding: "12px 16px", borderBottom: `1px solid ${P.gold}25`, display: "flex", alignItems: "center", gap: 8 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <span style={{ fontSize: 13, fontWeight: 600, color: P.gold }}>{t.learnTitle}</span>
@@ -2144,20 +2187,20 @@ export default function MoroccanLawQA() {
                     type="text" value={learnCustom}
                     onChange={(e) => { setLearnCustom(e.target.value); if (e.target.value) setLearnConcept(""); }}
                     placeholder={t.learnCustomPlaceholder}
-                    style={{ width: "100%", height: 44, padding: "0 14px", fontSize: 13, fontFamily: ff, color: P.text, background: P.bgInput, border: `1px solid ${P.border}`, borderRadius: 10, outline: "none", boxSizing: "border-box", direction: rtl ? "rtl" : "ltr", transition: `all 200ms ${E}` }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.boxShadow = `0 0 0 3px ${P.gold}12`; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.boxShadow = "none"; }}
+                    className="input-field"
+                    style={{ width: "100%", height: 44, padding: "0 14px", fontSize: 13, fontFamily: ff, color: P.text, background: P.bgInput, border: `1px solid ${P.border}`, borderRadius: 10, outline: "none", boxSizing: "border-box", direction: rtl ? "rtl" : "ltr" }}
                     onKeyDown={(e) => { if (e.key === "Enter") explainConcept(); }}
                   />
                 </div>
 
                 {/* Explain button */}
                 <button onClick={explainConcept} disabled={learnLoading || (!learnConcept && !learnCustom.trim())}
-                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: (learnLoading || (!learnConcept && !learnCustom.trim())) ? P.bgHover : P.gold, color: (learnLoading || (!learnConcept && !learnCustom.trim())) ? P.textDim : P.bg, border: "none", borderRadius: 12, cursor: (learnLoading || (!learnConcept && !learnCustom.trim())) ? "default" : "pointer", transition: `all 250ms ${E}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                  className="btn-primary"
+                  style={{ width: "100%", height: 50, fontSize: 14, fontWeight: 700, fontFamily: ff, background: (learnLoading || (!learnConcept && !learnCustom.trim())) ? P.bgHover : P.gold, color: (learnLoading || (!learnConcept && !learnCustom.trim())) ? P.textDim : P.bg, border: "none", borderRadius: 12, cursor: (learnLoading || (!learnConcept && !learnCustom.trim())) ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: (!learnLoading && (learnConcept || learnCustom.trim())) ? `0 4px 20px #c8a45e30` : "none" }}>
                   {learnLoading ? (
                     <>
-                      <span>{t.learnExplaining}</span>
                       <div style={{ display: "flex", gap: 4 }}>{[0,1,2].map(d => <span key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", animation: `dots 1.4s infinite ${d*0.2}s` }} />)}</div>
+                      <span>{t.learnExplaining}</span>
                     </>
                   ) : t.learnBtnLabel}
                 </button>
@@ -2171,11 +2214,12 @@ export default function MoroccanLawQA() {
             {/* Hero */}
             <div style={{ textAlign: "center", marginBottom: 56 }}>
               <div style={{
-                width: 56, height: 56, margin: "0 auto 24px",
+                width: 60, height: 60, margin: "0 auto 24px",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                background: `linear-gradient(135deg, ${P.gold}18, ${P.gold}08)`,
-                border: `1px solid ${P.gold}30`,
-                borderRadius: 14,
+                background: `linear-gradient(135deg, ${P.gold}22, ${P.gold}0a)`,
+                border: `1px solid ${P.gold}40`,
+                borderRadius: 16,
+                boxShadow: `0 4px 24px #c8a45e18, 0 0 0 1px #c8a45e08`,
               }}>
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={P.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 3v18M3 7l3-4 3 4M15 7l3-4 3 4" /><path d="M3 7c0 3 3 5 3 5s3-2 3-5M15 7c0 3 3 5 3 5s3-2 3-5" />
@@ -2188,16 +2232,16 @@ export default function MoroccanLawQA() {
             {/* Domains – horizontal pills */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: isMobile ? 6 : 8, justifyContent: "center", marginBottom: isMobile ? 24 : 40 }}>
               {legalDomains[language].map((d, i) => (
-                <div key={i} style={{
+                <div key={i} className="card" style={{
                   padding: isMobile ? "8px 12px" : "10px 18px",
                   background: P.bgCard,
                   border: `1px solid ${P.border}`,
                   borderRadius: 10,
-                  transition: `all 250ms ${E}`,
                   cursor: "default",
-                  animation: `fadeUp 300ms ${E} forwards`,
+                  animation: `fadeUp 320ms cubic-bezier(0.22,1,0.36,1) forwards`,
                   animationDelay: `${80 + i * 60}ms`,
                   opacity: 0,
+                  boxShadow: `0 2px 12px #0004`,
                 }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.background = P.bgHover; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.background = P.bgCard; }}
@@ -2214,6 +2258,7 @@ export default function MoroccanLawQA() {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {quickQuestions[language].map((q, i) => (
                   <button key={i} onClick={() => send(q)}
+                    className="btn-press card"
                     style={{
                       padding: isMobile ? "10px 14px" : "13px 18px",
                       background: P.bgCard,
@@ -2224,11 +2269,11 @@ export default function MoroccanLawQA() {
                       fontFamily: ff,
                       textAlign: rtl ? "right" : "left",
                       cursor: "pointer",
-                      transition: `all 250ms ${E}`,
-                      animation: `fadeUp 300ms ${E} forwards`,
-                      animationDelay: `${160 + i * 40}ms`,
+                      animation: `fadeUp 320ms cubic-bezier(0.22,1,0.36,1) forwards`,
+                      animationDelay: `${160 + i * 45}ms`,
                       opacity: 0,
                       lineHeight: 1.5,
+                      boxShadow: `0 2px 10px #0003`,
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.borderColor = P.goldMuted;
@@ -2265,10 +2310,11 @@ export default function MoroccanLawQA() {
                   display: "flex",
                   flexDirection: "column",
                   alignItems: u ? (rtl ? "flex-start" : "flex-end") : (rtl ? "flex-end" : "flex-start"),
-                  animation: `msgIn 250ms ${E} forwards`,
+                  animation: `msgIn 300ms cubic-bezier(0.22,1,0.36,1) both`,
+                  animationDelay: `${Math.min(i, 3) * 30}ms`,
                   gap: 3,
                 }}>
-                  <div style={{
+                  <div className="msg-bubble" style={{
                     maxWidth: u ? "80%" : "92%",
                     padding: "12px 16px",
                     borderRadius: u ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
@@ -2280,7 +2326,7 @@ export default function MoroccanLawQA() {
                     background: u ? P.userBubble : P.aiBubble,
                     color: u ? P.text : P.textMid,
                     border: `1px solid ${u ? P.borderLight : P.border}`,
-                    transition: `border-color 250ms ${E}`,
+                    boxShadow: `0 2px 12px #0003`,
                   }}
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = u ? P.goldMuted : P.borderLight; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = u ? P.borderLight : P.border; }}
@@ -2310,14 +2356,19 @@ export default function MoroccanLawQA() {
               );
             })}
             {loading && (
-              <div style={{ display: "flex", justifyContent: rtl ? "flex-end" : "flex-start", animation: `msgIn 250ms ${E} forwards` }}>
-                <div style={{ padding: "12px 18px", borderRadius: 16, background: P.aiBubble, border: `1px solid ${P.border}`, color: P.gold, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>{t.thinking}</span>
-                  <span style={{ display: "inline-flex", gap: 3 }}>
-                    {[0, 1, 2].map((d) => (
-                      <span key={d} style={{ width: 4, height: 4, borderRadius: "50%", background: P.gold, animation: `dots 1.4s infinite ${d * 0.2}s` }} />
-                    ))}
-                  </span>
+              <div style={{ display: "flex", justifyContent: rtl ? "flex-end" : "flex-start", animation: `msgIn 260ms ${E} forwards` }}>
+                <div style={{ padding: "14px 18px", borderRadius: 16, background: P.aiBubble, border: `1px solid ${P.border}`, display: "flex", flexDirection: "column", gap: 10, minWidth: 200, maxWidth: 300 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 12, color: P.gold }}>{t.thinking}</span>
+                    <span style={{ display: "inline-flex", gap: 3 }}>
+                      {[0, 1, 2].map((d) => (
+                        <span key={d} style={{ width: 4, height: 4, borderRadius: "50%", background: P.gold, animation: `dots 1.4s infinite ${d * 0.2}s` }} />
+                      ))}
+                    </span>
+                  </div>
+                  <div className="skeleton-line" style={{ height: 11, width: "82%" }} />
+                  <div className="skeleton-line" style={{ height: 11, width: "62%" }} />
+                  <div className="skeleton-line" style={{ height: 11, width: "75%" }} />
                 </div>
               </div>
             )}
@@ -2352,6 +2403,7 @@ export default function MoroccanLawQA() {
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder={t.placeholder}
             disabled={loading}
+            className="input-field"
             style={{
               flex: 1, height: isMobile ? 42 : 48, padding: isMobile ? "0 12px" : "0 18px",
               fontSize: isMobile ? 13 : 14, fontFamily: ff,
@@ -2359,11 +2411,8 @@ export default function MoroccanLawQA() {
               background: P.bgInput,
               border: `1px solid ${P.border}`,
               borderRadius: 12, outline: "none",
-              transition: `all 200ms ${E}`,
               direction: rtl ? "rtl" : "ltr",
             }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.boxShadow = `0 0 0 3px ${P.gold}12`; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.boxShadow = "none"; }}
           />
           {navigator.mediaDevices && (
             <button
@@ -2395,6 +2444,7 @@ export default function MoroccanLawQA() {
           <button
             onClick={() => send()}
             disabled={loading || !input.trim()}
+            className="btn-press"
             style={{
               width: isMobile ? 38 : 44, height: isMobile ? 38 : 44,
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -2402,11 +2452,11 @@ export default function MoroccanLawQA() {
               color: loading || !input.trim() ? P.textDim : P.bg,
               border: "none", borderRadius: 12,
               cursor: loading || !input.trim() ? "not-allowed" : "pointer",
-              transition: `all 250ms ${E}`,
               flexShrink: 0,
+              boxShadow: !loading && input.trim() ? `0 2px 10px #c8a45e28` : "none",
             }}
-            onMouseEnter={(e) => { if (!loading && input.trim()) e.currentTarget.style.background = P.goldLight; }}
-            onMouseLeave={(e) => { if (!loading && input.trim()) e.currentTarget.style.background = P.gold; }}
+            onMouseEnter={(e) => { if (!loading && input.trim()) { e.currentTarget.style.background = P.goldLight; e.currentTarget.style.boxShadow = `0 4px 16px #c8a45e40`; } }}
+            onMouseLeave={(e) => { if (!loading && input.trim()) { e.currentTarget.style.background = P.gold; e.currentTarget.style.boxShadow = `0 2px 10px #c8a45e28`; } }}
           ><SendIcon /></button>
         </div>
         <p style={{ maxWidth: 760, margin: "10px auto 0", fontSize: 11, color: P.textDim, textAlign: "center", lineHeight: 1.4 }}>{t.disclaimer}</p>

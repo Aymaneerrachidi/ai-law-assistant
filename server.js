@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { getLegalContext, SENTENCING_KB } from "./legal-kb.js";
 import { retrieveTopChunks } from "./ragSystem.js";
+import { isGreeting, getGreetingResponse, getSuggestedQuestion, getAllSuggestedQuestions } from "./adala-greeting-cache.js";
 
 dotenv.config();
 
@@ -905,6 +906,115 @@ app.get("/health", (_req, res) => {
   return res.status(200).json({ status: "ok" });
 });
 
+// ═══════════════════════════════════════════════════════════════════════
+// ADALA GREETING & CACHING ENDPOINTS - ZERO API CALLS FOR COMMON INTERACTIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/check-greeting
+ * Check if user input is a greeting and get auto-reply
+ * ZERO API CALL - uses local cache
+ * 
+ * Request: { text: string, language: string }
+ * Response: { isGreeting: boolean, reply?: string, cached: true }
+ */
+app.post("/api/check-greeting", (req, res) => {
+  try {
+    const { text, language } = req.body;
+    if (!text || !language) {
+      return res.status(400).json({ error: "text and language required" });
+    }
+
+    const greeting = isGreeting(text, language);
+    if (greeting) {
+      const reply = getGreetingResponse(language, text);
+      return res.json({
+        isGreeting: true,
+        reply,
+        cached: true,
+        provider: "greeting_auto_reply"
+      });
+    }
+
+    return res.json({
+      isGreeting: false,
+      cached: true,
+      provider: "greeting_detector"
+    });
+  } catch (error) {
+    console.error("[check-greeting] Error:", error.message);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+/**
+ * GET /api/suggested-questions
+ * Get all pre-cached suggested questions for home tab
+ * ZERO API CALL - uses local cache
+ * 
+ * Query: ?language=ar|darija|fr|en
+ * Response: { suggestions: [{ question, domain }], count: number, cached: true }
+ */
+app.get("/api/suggested-questions", (req, res) => {
+  try {
+    const language = req.query.language || "ar";
+    const suggestions = getAllSuggestedQuestions(language);
+
+    return res.json({
+      suggestions: suggestions.map(s => ({
+        question: s.question,
+        domain: s.domain
+      })),
+      count: suggestions.length,
+      cached: true,
+      provider: "suggested_questions_cache",
+      language
+    });
+  } catch (error) {
+    console.error("[suggested-questions] Error:", error.message);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
+/**
+ * POST /api/check-cached-answer
+ * Check if a specific question has a pre-cached answer
+ * ZERO API CALL - returns cached answer if found
+ * 
+ * Request: { question: string, language: string }
+ * Response: { hasCached: true, answer, domain, confidence, provider: "cached_suggestion" }
+ *        or { hasCached: false, cached: true }
+ */
+app.post("/api/check-cached-answer", (req, res) => {
+  try {
+    const { question, language } = req.body;
+    if (!question || !language) {
+      return res.status(400).json({ error: "question and language required" });
+    }
+
+    const cached = getSuggestedQuestion(language, question);
+    if (cached) {
+      return res.json({
+        hasCached: true,
+        answer: cached.cached_answer,
+        domain: cached.domain,
+        confidence: cached.confidence,
+        cached: true,
+        provider: "cached_suggestion"
+      });
+    }
+
+    return res.json({
+      hasCached: false,
+      cached: true,
+      provider: "cache_checker"
+    });
+  } catch (error) {
+    console.error("[check-cached-answer] Error:", error.message);
+    return res.status(500).json({ error: "Internal error" });
+  }
+});
+
 app.post("/api/moroccan-law-qa", async (req, res) => {
   try {
     const inputMessages = Array.isArray(req.body?.messages) ? req.body.messages : [];
@@ -915,6 +1025,32 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
     const lang = req.body?.language || "ar";
     const lastUserMessage = [...inputMessages].reverse().find((m) => m?.role === "user")?.content || "";
     console.log(`[QA] lang=${lang} | q=${lastUserMessage.slice(0, 200)}`);
+
+    // ── GREETING AUTO-REPLY (ZERO API CALLS) ────────────────────────────────
+    if (isGreeting(lastUserMessage, lang)) {
+      const greetingReply = getGreetingResponse(lang, lastUserMessage);
+      console.log(`[QA] GREETING DETECTED - auto-reply`);
+      return res.json({
+        content: greetingReply,
+        isGreeting: true,
+        degraded: false,
+        provider: "greeting_auto_reply"
+      });
+    }
+
+    // ── CACHED SUGGESTION CHECK (ZERO API CALLS) ────────────────────────────
+    const cachedSuggestion = getSuggestedQuestion(lang, lastUserMessage);
+    if (cachedSuggestion) {
+      console.log(`[QA] CACHED SUGGESTION FOUND - domain=${cachedSuggestion.domain}`);
+      return res.json({
+        content: cachedSuggestion.cached_answer,
+        isCached: true,
+        domain: cachedSuggestion.domain,
+        confidence: cachedSuggestion.confidence,
+        degraded: false,
+        provider: "cached_suggestion"
+      });
+    }
 
     // ── Off-topic guard ────────────────────────────────────────────────────
     const standardArabicText = req.body?.standardArabic || "";
