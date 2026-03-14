@@ -681,9 +681,11 @@ if (typeof document !== "undefined" && !document.getElementById(styleId)) {
     *::-webkit-scrollbar-track{background:transparent}
     *::-webkit-scrollbar-thumb{background:#3d352c;border-radius:8px}
     *::-webkit-scrollbar-thumb:hover{background:#5a4f43}
-    .msg-action-btn{transition:background 150ms,color 150ms,border-color 150ms}
+    .msg-action-btn{transition:background 150ms,color 150ms,border-color 150ms;touch-action:manipulation;-webkit-tap-highlight-color:transparent;display:inline-flex;align-items:center;justify-content:center;min-height:28px}
     .msg-action-btn:hover{color:#c8a45e!important;border-color:#c8a45e50!important}
+    .msg-action-btn:active{opacity:0.7;transform:scale(0.96)}
     .hide-scrollbar::-webkit-scrollbar{display:none}
+    @media(max-width:639px){.msg-action-btn{min-height:36px;padding:6px 11px!important;font-size:12px!important}}
     .hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
     .tab-panel{animation:slideInUp 240ms var(--spring) both}
     .btn-press{transition:transform 120ms var(--easing),background 200ms var(--easing),color 200ms var(--easing),box-shadow 200ms var(--easing)}
@@ -1924,7 +1926,7 @@ export default function MoroccanLawQA() {
             return (
               <button key={m} onClick={() => setMode(m)}
                 style={{
-                  padding: isMobile ? "6px 12px" : "6px 16px", fontSize: isMobile ? 11 : 12, fontWeight: 600, fontFamily: ff,
+                  padding: isMobile ? "8px 14px" : "6px 16px", fontSize: isMobile ? 12 : 12, fontWeight: 600, fontFamily: ff,
                   background: on ? P.gold : "transparent",
                   color: on ? P.bg : P.textDim,
                   border: "none", borderRadius: 8, cursor: "pointer",
@@ -1938,7 +1940,7 @@ export default function MoroccanLawQA() {
       </header>
 
       {/* ── Content ── */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 760, width: "100%", margin: "0 auto", padding: isMobile ? "0 10px" : "0 20px", position: "relative" }}>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 760, width: "100%", margin: "0 auto", padding: isMobile ? "0 14px" : "0 20px", position: "relative" }}>
 
         {mode === "doc" ? (
           /* ── Document Analysis View ── */
@@ -2628,7 +2630,7 @@ export default function MoroccanLawQA() {
           </div>
         ) : (
           /* ── Messages ── */
-          <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px 0 120px" : "24px 0 140px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px 0 130px" : "24px 0 140px", display: "flex", flexDirection: "column", gap: isMobile ? 8 : 10 }}>
             <div style={{ display: "flex", justifyContent: rtl ? "flex-start" : "flex-end", gap: 6, marginBottom: 4, flexShrink: 0 }}>
               {messages.some((m) => m.role === "assistant") && !loading && (
                 <button onClick={exportChatPdf} style={{ padding: "5px 12px", fontSize: 11, fontWeight: 600, fontFamily: ff, background: `${P.gold}18`, color: P.gold, border: `1px solid ${P.gold}40`, borderRadius: 8, cursor: "pointer" }}>{t.exportPdf}</button>
@@ -2651,11 +2653,11 @@ export default function MoroccanLawQA() {
                   gap: 3,
                 }}>
                   <div className="msg-bubble" style={{
-                    maxWidth: u ? "80%" : "92%",
-                    padding: "12px 16px",
+                    maxWidth: u ? (isMobile ? "88%" : "80%") : (isMobile ? "96%" : "92%"),
+                    padding: isMobile ? "10px 14px" : "12px 16px",
                     borderRadius: u ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
                     ...(rtl && { borderRadius: u ? "16px 16px 16px 4px" : "16px 16px 4px 16px" }),
-                    fontSize: 14,
+                    fontSize: isMobile ? 13.5 : 14,
                     lineHeight: 1.75,
                     fontFamily: ff,
                     whiteSpace: "pre-wrap",
@@ -2668,7 +2670,7 @@ export default function MoroccanLawQA() {
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = u ? P.borderLight : P.border; }}
                   >{m.content}</div>
                   {!u && (
-                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: isMobile ? 6 : 5, flexWrap: "wrap" }}>
                       {/* Copy */}
                       <button className="msg-action-btn" onClick={() => copyToClipboard(m.content, `msg-${i}`)}
                         style={{
@@ -2772,8 +2774,8 @@ export default function MoroccanLawQA() {
       {mode === "chat" && (
       <div style={{
         position: chat ? "fixed" : "sticky", bottom: 0, left: 0, right: 0, zIndex: 20,
-        padding: isMobile ? "8px 10px 12px" : "12px 20px 20px",
-        background: `linear-gradient(to top, ${P.bg} 70%, transparent)`,
+        padding: isMobile ? `10px 12px max(14px, env(safe-area-inset-bottom, 14px))` : "12px 20px 20px",
+        background: `linear-gradient(to top, ${P.bg} 75%, transparent)`,
       }}>
         <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", gap: isMobile ? 6 : 10, alignItems: "center" }}>
           <input
@@ -2784,8 +2786,8 @@ export default function MoroccanLawQA() {
             disabled={loading}
             className="input-field"
             style={{
-              flex: 1, height: isMobile ? 42 : 48, padding: isMobile ? "0 12px" : "0 18px",
-              fontSize: isMobile ? 13 : 14, fontFamily: ff,
+              flex: 1, height: isMobile ? 46 : 48, padding: isMobile ? "0 14px" : "0 18px",
+              fontSize: isMobile ? 14 : 14, fontFamily: ff,
               color: P.text,
               background: P.bgInput,
               border: `1px solid ${P.border}`,
@@ -2798,7 +2800,7 @@ export default function MoroccanLawQA() {
               onClick={voiceTranscribing ? undefined : isListening ? stopVoice : startVoice}
               title={voiceTranscribing ? t.voiceTranscribing : isListening ? t.voiceTapToStop : t.voiceListen}
               style={{
-                width: isMobile ? 38 : 44, height: isMobile ? 38 : 44, borderRadius: 10,
+                width: isMobile ? 46 : 44, height: isMobile ? 46 : 44, borderRadius: 12,
                 border: `1px solid ${isListening ? P.gold + "60" : voiceTranscribing ? P.gold + "40" : P.border}`,
                 background: isListening ? `${P.gold}18` : voiceTranscribing ? `${P.gold}10` : "transparent",
                 color: isListening ? P.gold : voiceTranscribing ? P.goldMuted : P.textDim,
@@ -2825,7 +2827,7 @@ export default function MoroccanLawQA() {
             disabled={loading || !input.trim()}
             className="btn-press"
             style={{
-              width: isMobile ? 38 : 44, height: isMobile ? 38 : 44,
+              width: isMobile ? 46 : 44, height: isMobile ? 46 : 44,
               display: "flex", alignItems: "center", justifyContent: "center",
               background: loading || !input.trim() ? P.bgInput : P.gold,
               color: loading || !input.trim() ? P.textDim : P.bg,
