@@ -7,6 +7,7 @@ const ANALYZE_URL = `${BASE}/api/analyze-document`;
 const EXTRACT_URL = `${BASE}/api/extract-with-llm`;
 const EXPLAIN_URL = `${BASE}/api/explain-concept`;
 const TRANSCRIBE_URL = `${BASE}/api/transcribe`;
+const RATE_URL = `${BASE}/api/rate`;
 
 /* ─── Translations ─── */
 const UI = {
@@ -117,6 +118,27 @@ const UI = {
     voiceTranscribing: "جاري تحويل الصوت...",
     voiceTapToStop: "انقر للتوقف",
     followUpTitle: "أسئلة متعلقة",
+    bookmarkSave: "حفظ",
+    bookmarkSaved: "محفوظ ✓",
+    bookmarksTitle: "المحفوظات",
+    bookmarksEmpty: "لا توجد إجابات محفوظة بعد",
+    bookmarkRemove: "حذف",
+    bookmarksClose: "إغلاق",
+    ratingPrompt: "هل هذا الجواب مفيد؟",
+    ratingThanks: "شكراً لتقييمك!",
+    shareWhatsApp: "واتساب",
+    shareCopy: "نسخ",
+    shareCopied: "تم النسخ ✓",
+    ttsRead: "استمع",
+    ttsStop: "إيقاف",
+    darkMode: "ليلي",
+    lightMode: "نهاري",
+    docAskTitle: "اسأل عن الوثيقة",
+    docAskPlaceholder: "اسأل سؤالاً عن هذه الوثيقة...",
+    docAskBtn: "سؤال",
+    docAskClear: "إلغاء الوثيقة",
+    docAskThinking: "جاري تحليل الوثيقة...",
+    docAskResult: "إجابة السؤال",
   },
   fr: {
     title: "adalaapp",
@@ -225,6 +247,27 @@ const UI = {
     voiceTranscribing: "Transcription en cours...",
     voiceTapToStop: "Cliquez pour arrêter",
     followUpTitle: "Questions connexes",
+    bookmarkSave: "Sauv.",
+    bookmarkSaved: "Sauvegardé ✓",
+    bookmarksTitle: "Favoris",
+    bookmarksEmpty: "Aucune réponse sauvegardée",
+    bookmarkRemove: "Suppr.",
+    bookmarksClose: "Fermer",
+    ratingPrompt: "Cette réponse vous a-t-elle aidé ?",
+    ratingThanks: "Merci pour votre avis !",
+    shareWhatsApp: "WhatsApp",
+    shareCopy: "Copier",
+    shareCopied: "Copié ✓",
+    ttsRead: "Écouter",
+    ttsStop: "Stop",
+    darkMode: "Sombre",
+    lightMode: "Clair",
+    docAskTitle: "Questions sur le document",
+    docAskPlaceholder: "Posez une question sur ce document...",
+    docAskBtn: "Demander",
+    docAskClear: "Effacer le document",
+    docAskThinking: "Analyse du document...",
+    docAskResult: "Réponse",
   },
   en: {
     title: "adalaapp",
@@ -333,6 +376,27 @@ const UI = {
     voiceTranscribing: "Transcribing audio...",
     voiceTapToStop: "Click to stop",
     followUpTitle: "Related questions",
+    bookmarkSave: "Save",
+    bookmarkSaved: "Saved ✓",
+    bookmarksTitle: "Saved Answers",
+    bookmarksEmpty: "No saved answers yet",
+    bookmarkRemove: "Remove",
+    bookmarksClose: "Close",
+    ratingPrompt: "Was this helpful?",
+    ratingThanks: "Thanks for your feedback!",
+    shareWhatsApp: "WhatsApp",
+    shareCopy: "Copy",
+    shareCopied: "Copied ✓",
+    ttsRead: "Listen",
+    ttsStop: "Stop",
+    darkMode: "Dark",
+    lightMode: "Light",
+    docAskTitle: "Ask about document",
+    docAskPlaceholder: "Ask a question about this document...",
+    docAskBtn: "Ask",
+    docAskClear: "Clear document",
+    docAskThinking: "Analyzing document...",
+    docAskResult: "Answer",
   },
   dar: {
     title: "عدالة",
@@ -441,6 +505,27 @@ const UI = {
     voiceTranscribing: "راه كيترجم الصوت...",
     voiceTapToStop: "نقر باش تقف",
     followUpTitle: "أسئلة مرتبطة",
+    bookmarkSave: "حفظ",
+    bookmarkSaved: "محفوظ ✓",
+    bookmarksTitle: "المحفوظات",
+    bookmarksEmpty: "ما كاين شي محفوظ بعد",
+    bookmarkRemove: "مسح",
+    bookmarksClose: "غلق",
+    ratingPrompt: "واش هاد الجواب مفيد؟",
+    ratingThanks: "شكراً على التقييم!",
+    shareWhatsApp: "واتساب",
+    shareCopy: "نسخ",
+    shareCopied: "نسخت ✓",
+    ttsRead: "تسمع",
+    ttsStop: "وقف",
+    darkMode: "ليلي",
+    lightMode: "نهاري",
+    docAskTitle: "سقسي على الوثيقة",
+    docAskPlaceholder: "سقسي سؤال على هاد الوثيقة...",
+    docAskBtn: "سؤال",
+    docAskClear: "إلغاء الوثيقة",
+    docAskThinking: "راه كيحلل الوثيقة...",
+    docAskResult: "الجواب",
   },
 };
 
@@ -618,12 +703,31 @@ if (typeof document !== "undefined" && !document.getElementById(styleId)) {
     .msg-bubble:hover{box-shadow:0 2px 16px #0005}
     .input-field{transition:border-color 200ms var(--easing),box-shadow 200ms var(--easing)}
     .input-field:focus{border-color:#a08346!important;box-shadow:0 0 0 3px #c8a45e14,inset 0 1px 0 #c8a45e08!important}
+    /* ── Light mode overrides ── */
+    :root[data-theme="light"] {
+      --p-bg:#f7f3ee; --p-bgCard:#ffffff; --p-bgInput:#ede8e0; --p-bgHover:#e4dfd6;
+      --p-text:#1a1510; --p-textMid:#4a4238; --p-textDim:#6b5e52;
+      --p-border:#d5cdc2; --p-borderLight:#c8bfb5;
+    }
+    :root[data-theme="light"] .skeleton-line{
+      background:linear-gradient(90deg,#ede8e0 25%,#d5cdc2 50%,#ede8e0 75%);
+      background-size:200% 100%;
+    }
+    /* ── Bookmarks drawer ── */
+    .bm-drawer{position:fixed;top:0;right:0;width:340px;max-width:92vw;height:100%;z-index:1200;
+      background:var(--p-bgCard);border-left:1px solid var(--p-border);
+      display:flex;flex-direction:column;transform:translateX(100%);
+      transition:transform 280ms cubic-bezier(0.22,1,0.36,1);}
+    .bm-drawer.open{transform:translateX(0);}
+    .bm-overlay{position:fixed;inset:0;z-index:1199;background:#0007;
+      opacity:0;pointer-events:none;transition:opacity 280ms;}
+    .bm-overlay.open{opacity:1;pointer-events:all;}
   `;
   document.head.appendChild(s);
 }
 
 /* ─── Design tokens ─── */
-const P = {
+const DARK_P = {
   bg: "#1a1510",
   bgCard: "#231e17",
   bgInput: "#2a241c",
@@ -638,6 +742,22 @@ const P = {
   borderLight: "#4a4238",
   userBubble: "#2c2518",
   aiBubble: "#211c15",
+};
+const LIGHT_P = {
+  bg: "#f7f3ee",
+  bgCard: "#ffffff",
+  bgInput: "#ede8e0",
+  bgHover: "#e4dfd6",
+  gold: "#9a6f2e",
+  goldMuted: "#7a5520",
+  goldLight: "#b88a3a",
+  text: "#1a1510",
+  textMid: "#4a4238",
+  textDim: "#6b5e52",
+  border: "#d5cdc2",
+  borderLight: "#c8bfb5",
+  userBubble: "#f0ebe0",
+  aiBubble: "#fdfaf6",
 };
 const E = "cubic-bezier(0.4,0,0.2,1)";
 const F = '"Josefin Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
@@ -699,6 +819,19 @@ export default function MoroccanLawQA() {
     return () => window.removeEventListener("resize", h);
   }, []);
 
+  // ── New feature state ──
+  const [theme, setTheme] = useState(() => localStorage.getItem("adala_theme") || "dark");
+  const [bookmarks, setBookmarks] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("adala_bookmarks") || "[]"); } catch { return []; }
+  });
+  const [ratings, setRatings] = useState({});
+  const [speakingId, setSpeakingId] = useState(null);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  const [docChatInput, setDocChatInput] = useState("");
+  const [docChatLoading, setDocChatLoading] = useState(false);
+  const [docChatMessages, setDocChatMessages] = useState([]);
+  const [copiedShareId, setCopiedShareId] = useState(null);
+
   const rtl = language === "ar" || language === "dar";
   const t = UI[language];
   const ff = rtl ? FA : F;
@@ -722,6 +855,135 @@ export default function MoroccanLawQA() {
   useEffect(() => {
     localStorage.setItem("mlq_chat", JSON.stringify(messages));
   }, [messages]);
+
+  // ── Theme ──
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("adala_theme", theme);
+  }, [theme]);
+
+  function toggleTheme() { setTheme(t => t === "dark" ? "light" : "dark"); }
+  const P = theme === "dark" ? DARK_P : LIGHT_P;
+
+  // ── Bookmarks ──
+  function saveBookmark(msgIdx) {
+    const answer = messages[msgIdx];
+    const question = messages[msgIdx - 1];
+    if (!answer) return;
+    const entry = { id: Date.now(), answer: answer.content, question: question?.content || "", lang: language };
+    const next = [entry, ...bookmarks].slice(0, 50);
+    setBookmarks(next);
+    localStorage.setItem("adala_bookmarks", JSON.stringify(next));
+  }
+  function removeBookmark(id) {
+    const next = bookmarks.filter(b => b.id !== id);
+    setBookmarks(next);
+    localStorage.setItem("adala_bookmarks", JSON.stringify(next));
+  }
+  function isBookmarked(msgIdx) {
+    const answer = messages[msgIdx];
+    if (!answer) return false;
+    return bookmarks.some(b => b.answer === answer.content);
+  }
+
+  // ── Ratings ──
+  async function handleRate(msgIdx, rating) {
+    if (ratings[msgIdx]) return;
+    setRatings(r => ({ ...r, [msgIdx]: rating }));
+    const question = messages[msgIdx - 1]?.content || "";
+    const answer = messages[msgIdx]?.content || "";
+    try {
+      await fetch(RATE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating, question, answer: answer.slice(0, 500), language }),
+      });
+    } catch {}
+  }
+
+  // ── TTS ──
+  function speakText(text, id) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    if (speakingId === id) { setSpeakingId(null); return; }
+
+    const doSpeak = (voices) => {
+      const utt = new SpeechSynthesisUtterance(text);
+      if (language === "fr") {
+        const v = voices.find(x => x.lang === "fr-FR")
+          || voices.find(x => x.lang === "fr-CA")
+          || voices.find(x => x.lang.startsWith("fr")) || null;
+        if (v) { utt.voice = v; utt.lang = v.lang; } else { utt.lang = "fr-FR"; }
+      } else if (language === "en") {
+        const v = voices.find(x => x.lang === "en-US")
+          || voices.find(x => x.lang.startsWith("en")) || null;
+        if (v) { utt.voice = v; utt.lang = v.lang; } else { utt.lang = "en-US"; }
+      } else {
+        // Arabic / Darija — try all available Arabic locales
+        const v = voices.find(x => x.lang === "ar-MA")
+          || voices.find(x => x.lang === "ar-SA")
+          || voices.find(x => x.lang === "ar-EG")
+          || voices.find(x => x.lang === "ar-DZ")
+          || voices.find(x => x.lang.startsWith("ar")) || null;
+        if (v) { utt.voice = v; utt.lang = v.lang; } else { utt.lang = "ar-SA"; }
+      }
+      utt.rate = 0.95;
+      utt.onend = () => setSpeakingId(null);
+      utt.onerror = () => setSpeakingId(null);
+      setSpeakingId(id);
+      window.speechSynthesis.speak(utt);
+    };
+
+    // getVoices() is async on first call — wait for voiceschanged if list is empty
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      doSpeak(voices);
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        doSpeak(window.speechSynthesis.getVoices());
+      };
+    }
+  }
+
+  // ── Share ──
+  function shareWhatsApp(question, answer) {
+    const text = encodeURIComponent(`سؤال: ${question}\n\nالجواب: ${answer.slice(0, 300)}...\n\n— adalaapp`);
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  }
+  function copyShare(text, id) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedShareId(id);
+      setTimeout(() => setCopiedShareId(null), 2000);
+    }).catch(() => {});
+  }
+
+  // ── Doc Q&A ──
+  async function sendDocQuestion(question) {
+    if (!question.trim() || docChatLoading) return;
+    const q = question.trim();
+    setDocChatInput("");
+    setDocChatMessages(prev => [...prev, { role: "user", content: q }]);
+    setDocChatLoading(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: q }],
+          language,
+          documentText: extractedText,
+        }),
+      });
+      const d = await safeJson(res);
+      const answer = d.content || d.answer || d.choices?.[0]?.message?.content || "";
+      setDocChatMessages(prev => [...prev, { role: "assistant", content: answer }]);
+    } catch (e) {
+      setDocChatMessages(prev => [...prev, { role: "assistant", content: `Error: ${e.message}` }]);
+    } finally {
+      setDocChatLoading(false);
+    }
+  }
 
   async function send(text) {
     const c = (text || input).trim();
@@ -1575,7 +1837,7 @@ export default function MoroccanLawQA() {
 
       {/* ── Government Disclaimer Banner ── */}
       <div style={{
-        background: "#1a1000",
+        background: P.bg,
         borderBottom: `1px solid ${P.gold}40`,
         padding: isMobile ? "8px 14px" : "10px 32px",
         textAlign: "center",
@@ -1593,9 +1855,9 @@ export default function MoroccanLawQA() {
         display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "center", justifyContent: "space-between",
         padding: isMobile ? "10px 12px 8px" : "14px 32px",
         gap: isMobile ? 10 : 0,
-        background: "rgba(26,21,16,0.94)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
+        background: theme === "dark" ? "rgba(26,21,16,0.94)" : `${P.bg}f0`, backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)",
         borderBottom: `1px solid ${P.gold}20`,
-        boxShadow: `0 4px 24px #0008, 0 1px 0 #c8a45e12`,
+        boxShadow: theme === "dark" ? `0 4px 24px #0008, 0 1px 0 #c8a45e12` : `0 2px 12px ${P.border}80`,
       }}>
         {/* Top row: logo + language */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1605,7 +1867,7 @@ export default function MoroccanLawQA() {
               Adala App{" "}<span style={{ fontFamily: FA, fontWeight: 500, fontSize: isMobile ? 14 : 17 }}>- عدالة</span>
             </span>
           </div>
-          <div style={{ display: "flex", gap: 4, marginLeft: isMobile ? 0 : 24, marginRight: rtl ? 24 : 0 }}>
+          <div style={{ display: "flex", gap: 4, alignItems: "center", marginLeft: isMobile ? 0 : 24, marginRight: rtl ? 24 : 0 }}>
             {[
               { c: "dar", l: "دارجة" },
               { c: "ar", l: "ع" },
@@ -1629,6 +1891,24 @@ export default function MoroccanLawQA() {
                 >{l}</button>
               );
             })}
+            {/* ── Dark/Light toggle ── */}
+            <button onClick={toggleTheme} title={theme === "dark" ? t.lightMode : t.darkMode}
+              style={{ padding: isMobile ? "5px 8px" : "6px 10px", fontSize: 14, background: "transparent", color: P.textDim,
+                border: `1px solid ${P.border}`, borderRadius: 20, cursor: "pointer", transition: `all 250ms ${E}`, lineHeight: 1 }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.color = P.gold; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = P.border; e.currentTarget.style.color = P.textDim; }}
+            >{theme === "dark"
+                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display:"block"}}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display:"block"}}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              }</button>
+            {/* ── Bookmarks button ── */}
+            <button onClick={() => setShowBookmarks(true)} title={t.bookmarksTitle}
+              style={{ padding: isMobile ? "5px 8px" : "6px 10px", fontSize: 14, background: "transparent", color: bookmarks.length ? P.gold : P.textDim,
+                border: `1px solid ${bookmarks.length ? P.goldMuted : P.border}`, borderRadius: 20, cursor: "pointer", transition: `all 250ms ${E}`,
+                position: "relative", lineHeight: 1 }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = P.goldMuted; e.currentTarget.style.color = P.gold; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = bookmarks.length ? P.goldMuted : P.border; e.currentTarget.style.color = bookmarks.length ? P.gold : P.textDim; }}
+            ><svg width="15" height="15" viewBox="0 0 24 24" fill={bookmarks.length ? P.gold : "none"} stroke="currentColor" strokeWidth="2" style={{display:"block"}}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>{bookmarks.length > 0 && <span style={{ fontSize: 10, position: "absolute", top: -4, right: -4, background: P.gold, color: P.bg, borderRadius: 10, padding: "1px 4px", fontWeight: 700 }}>{bookmarks.length}</span>}</button>
           </div>
         </div>
         {/* Mode toggle – scrollable on mobile */}
@@ -1899,6 +2179,62 @@ export default function MoroccanLawQA() {
                             })}
                           </div>
                         )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Ask about Document ── */}
+                {docState === "done" && extractedText && (
+                  <div style={{ background: P.bgCard, border: `1px solid ${P.gold}30`, borderRadius: 12, overflow: "hidden", animation: `fadeUp 380ms ${E} forwards` }}>
+                    <div style={{ padding: "12px 16px", borderBottom: `1px solid ${P.gold}20`, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: P.gold, display:"flex", alignItems:"center", gap:6 }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>{t.docAskTitle}</span>
+                    </div>
+                    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10, direction: rtl ? "rtl" : "ltr" }}>
+                      {/* Message thread */}
+                      {docChatMessages.length > 0 && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 280, overflowY: "auto", paddingBottom: 4 }}>
+                          {docChatMessages.map((m, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? (rtl ? "flex-start" : "flex-end") : (rtl ? "flex-end" : "flex-start") }}>
+                              <div style={{
+                                padding: "8px 12px", borderRadius: 10, maxWidth: "85%",
+                                background: m.role === "user" ? `${P.gold}18` : P.bgInput,
+                                color: m.role === "user" ? P.text : P.textMid,
+                                border: `1px solid ${m.role === "user" ? P.gold + "30" : P.border}`,
+                                fontSize: 13, fontFamily: ff, lineHeight: 1.55,
+                              }}>{m.content}</div>
+                            </div>
+                          ))}
+                          {docChatLoading && (
+                            <div style={{ display: "flex", gap: 4, alignItems: "center", padding: "4px 8px", color: P.gold, fontSize: 12, fontFamily: ff }}>
+                              <span>{t.docAskThinking}</span>
+                              {[0,1,2].map(d => <span key={d} style={{ width: 4, height: 4, borderRadius: "50%", background: P.gold, animation: `dots 1.4s infinite ${d*0.2}s` }} />)}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {/* Input row */}
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input
+                          value={docChatInput}
+                          onChange={e => setDocChatInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendDocQuestion(docChatInput); } }}
+                          placeholder={t.docAskPlaceholder}
+                          disabled={docChatLoading}
+                          style={{
+                            flex: 1, padding: "8px 12px", fontSize: 13, fontFamily: ff,
+                            background: P.bgInput, color: P.text, border: `1px solid ${P.border}`,
+                            borderRadius: 8, outline: "none", direction: rtl ? "rtl" : "ltr",
+                          }}
+                        />
+                        <button onClick={() => sendDocQuestion(docChatInput)} disabled={docChatLoading || !docChatInput.trim()}
+                          style={{
+                            padding: "8px 16px", fontSize: 13, fontWeight: 600, fontFamily: ff,
+                            background: P.gold, color: P.bg, border: "none", borderRadius: 8,
+                            cursor: docChatLoading || !docChatInput.trim() ? "not-allowed" : "pointer",
+                            opacity: docChatLoading || !docChatInput.trim() ? 0.5 : 1,
+                          }}
+                        >{t.docAskBtn}</button>
                       </div>
                     </div>
                   </div>
@@ -2332,7 +2668,8 @@ export default function MoroccanLawQA() {
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = u ? P.borderLight : P.border; }}
                   >{m.content}</div>
                   {!u && (
-                    <div style={{ display: "flex", gap: 5 }}>
+                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                      {/* Copy */}
                       <button className="msg-action-btn" onClick={() => copyToClipboard(m.content, `msg-${i}`)}
                         style={{
                           padding: "3px 10px", fontSize: 10.5, fontWeight: 600, fontFamily: ff,
@@ -2342,6 +2679,7 @@ export default function MoroccanLawQA() {
                           borderRadius: 6, cursor: "pointer",
                         }}
                       >{copiedId === `msg-${i}` ? t.copied : t.copy}</button>
+                      {/* Export PDF */}
                       <button className="msg-action-btn" onClick={() => downloadMsgPdf(m.content, i)}
                         style={{
                           padding: "3px 10px", fontSize: 10.5, fontWeight: 600, fontFamily: ff,
@@ -2350,6 +2688,47 @@ export default function MoroccanLawQA() {
                           borderRadius: 6, cursor: "pointer",
                         }}
                       >{t.exportPdf}</button>
+                      {/* Bookmark */}
+                      <button className="msg-action-btn" onClick={() => saveBookmark(i)}
+                        style={{
+                          padding: "3px 8px", fontSize: 10.5, fontWeight: 600, fontFamily: ff,
+                          background: isBookmarked(i) ? `${P.gold}20` : P.bgInput,
+                          color: isBookmarked(i) ? P.gold : P.textDim,
+                          border: `1px solid ${isBookmarked(i) ? P.gold + "50" : P.border}`,
+                          borderRadius: 6, cursor: "pointer",
+                        }}
+                      >{isBookmarked(i) ? t.bookmarkSaved : t.bookmarkSave}</button>
+                      {/* TTS */}
+                      <button className="msg-action-btn" onClick={() => speakText(m.content, `msg-${i}`)}
+                        style={{
+                          padding: "3px 8px", fontSize: 10.5, fontWeight: 600, fontFamily: ff,
+                          background: speakingId === `msg-${i}` ? `${P.gold}20` : P.bgInput,
+                          color: speakingId === `msg-${i}` ? P.gold : P.textDim,
+                          border: `1px solid ${speakingId === `msg-${i}` ? P.gold + "50" : P.border}`,
+                          borderRadius: 6, cursor: "pointer",
+                        }}
+                      ><span style={{display:"flex",alignItems:"center",gap:3}}>{speakingId === `msg-${i}`
+                          ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>{t.ttsStop}</>
+                          : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>{t.ttsRead}</>
+                        }</span></button>
+                      {/* Rating */}
+                      {ratings[i] ? (
+                        <span style={{ padding: "3px 8px", fontSize: 10.5, color: P.gold, fontFamily: ff }}>{t.ratingThanks}</span>
+                      ) : (
+                        <>
+                          <button className="msg-action-btn" onClick={() => handleRate(i, "up")}
+                            style={{ padding: "4px 8px", fontSize: 11, background: P.bgInput, color: P.textDim, border: `1px solid ${P.border}`, borderRadius: 6, cursor: "pointer", display:"flex", alignItems:"center" }}
+                          ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
+                          <button className="msg-action-btn" onClick={() => handleRate(i, "down")}
+                            style={{ padding: "4px 8px", fontSize: 11, background: P.bgInput, color: P.textDim, border: `1px solid ${P.border}`, borderRadius: 6, cursor: "pointer", display:"flex", alignItems:"center" }}
+                          ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
+                        </>
+                      )}
+                      {/* WhatsApp share */}
+                      <button className="msg-action-btn" onClick={() => shareWhatsApp(messages[i-1]?.content || "", m.content)}
+                        style={{ padding: "3px 8px", fontSize: 11, background: P.bgInput, color: P.textDim, border: `1px solid ${P.border}`, borderRadius: 6, cursor: "pointer" }}
+                        title={t.shareWhatsApp}
+                      ><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.555 4.116 1.524 5.847L0 24l6.335-1.509A11.932 11.932 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.882a9.875 9.875 0 0 1-5.031-1.371l-.361-.214-3.741.981.998-3.648-.235-.374A9.861 9.861 0 0 1 2.118 12C2.118 6.53 6.53 2.118 12 2.118c5.471 0 9.882 4.412 9.882 9.882 0 5.471-4.411 9.882-9.882 9.882z"/></svg></button>
                     </div>
                   )}
                 </div>
@@ -2465,6 +2844,33 @@ export default function MoroccanLawQA() {
         )}
       </div>
       )}
+
+      {/* ── Bookmarks overlay + drawer ── */}
+      <div className={`bm-overlay${showBookmarks ? " open" : ""}`} onClick={() => setShowBookmarks(false)} />
+      <div className={`bm-drawer${showBookmarks ? " open" : ""}`} dir={rtl ? "rtl" : "ltr"}>
+        <div style={{ padding: "18px 20px 14px", borderBottom: `1px solid ${P.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontFamily: ff, fontWeight: 700, fontSize: 15, color: P.text }}>{t.bookmarksTitle}</span>
+          <button onClick={() => setShowBookmarks(false)} style={{ background: "none", border: "none", color: P.textDim, cursor: "pointer", fontSize: 18 }}>✕</button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {bookmarks.length === 0 ? (
+            <p style={{ color: P.textDim, fontFamily: ff, fontSize: 13, textAlign: "center", marginTop: 40 }}>{t.bookmarksEmpty}</p>
+          ) : bookmarks.map((bm) => (
+            <div key={bm.id} style={{ background: P.bgInput, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px" }}>
+              {bm.question && <p style={{ fontFamily: ff, fontSize: 11, color: P.textDim, margin: "0 0 6px", borderBottom: `1px solid ${P.border}`, paddingBottom: 6 }}>❓ {bm.question.slice(0, 120)}{bm.question.length > 120 ? "…" : ""}</p>}
+              <p style={{ fontFamily: ff, fontSize: 12, color: P.text, margin: "0 0 8px", lineHeight: 1.5 }}>{bm.answer.slice(0, 300)}{bm.answer.length > 300 ? "…" : ""}</p>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button onClick={() => { navigator.clipboard.writeText(bm.answer); }}
+                  style={{ padding: "3px 10px", fontSize: 11, fontFamily: ff, background: "transparent", color: P.textDim, border: `1px solid ${P.border}`, borderRadius: 6, cursor: "pointer" }}
+                >{t.shareCopy}</button>
+                <button onClick={() => removeBookmark(bm.id)}
+                  style={{ padding: "3px 10px", fontSize: 11, fontFamily: ff, background: "transparent", color: "#e07070", border: "1px solid #e0707040", borderRadius: 6, cursor: "pointer" }}
+                >{t.bookmarkRemove}</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

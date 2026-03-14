@@ -1,9 +1,51 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import rateLimit from "express-rate-limit";
 import { getLegalContext, SENTENCING_KB } from "./legal-kb.js";
 import { retrieveTopChunks } from "./ragSystem.js";
 import { isGreeting, getGreetingResponse, getSuggestedQuestion, getAllSuggestedQuestions } from "./adala-greeting-cache.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const LOGS_DIR = path.join(__dirname, "logs");
+if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });
+
+// ── Rate Limiting ────────────────────────────────────────────────────────────
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,   // 15 minutes
+  max: 60,                     // 60 requests per 15 min per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const lang = req.body?.language || "ar";
+    const msgs = {
+      ar: "لقد تجاوزت الحد المسموح به من الأسئلة. يرجى المحاولة مجدداً بعد 15 دقيقة.",
+      fr: "Vous avez dépassé la limite de requêtes. Réessayez dans 15 minutes.",
+      en: "You've exceeded the request limit. Please try again in 15 minutes.",
+      dar: "تجاوزت الحد ديال الأسئلة. جرب مرة أخرى من بعد 15 دقيقة.",
+    };
+    res.status(429).json({ error: msgs[lang] || msgs.ar, rateLimited: true });
+  },
+});
+
+// ── Analytics logger ─────────────────────────────────────────────────────────
+function logAnalytics(entry) {
+  try {
+    fs.appendFileSync(
+      path.join(LOGS_DIR, "analytics.jsonl"),
+      JSON.stringify({ ...entry, timestamp: new Date().toISOString() }) + "\n"
+    );
+  } catch {}
+}
+function hashIp(ip) {
+  let h = 0;
+  for (const c of (ip || "")) { h = (h << 5) - h + c.charCodeAt(0); h |= 0; }
+  return Math.abs(h).toString(16);
+}
 
 dotenv.config();
 
@@ -523,7 +565,7 @@ function detectDomain(text) {
   return "general";
 }
 
-function buildSystemPrompt(language, domain, userText, darijaIntent) {
+function buildSystemPrompt(language, domain, userText, darijaIntent, documentText) {
   const lang = ["ar", "fr", "en", "dar"].includes(language) ? language : "ar";
   const primary = PRIMARY_SYSTEM_PROMPTS[lang] || PRIMARY_SYSTEM_PROMPTS["ar"];
   const domainPrompt = DOMAIN_PROMPTS[domain] || DOMAIN_PROMPTS.general;
@@ -539,6 +581,9 @@ function buildSystemPrompt(language, domain, userText, darijaIntent) {
   if (ragChunks) contextParts.push(`MOST RELEVANT ARTICLES (ranked by relevance):\n${ragChunks}`);
   if (kbContext) contextParts.push(`FULL LEGAL REFERENCE:\n${kbContext}`);
   if (sentencingNeeded) contextParts.push(SENTENCING_KB);
+  if (documentText) {
+    contextParts.push(`USER DOCUMENT CONTEXT (the user is asking about this uploaded document — prioritize it in your answer):\n${documentText.slice(0, 2000)}`);
+  }
 
   const legalCtxBlock = contextParts.length
     ? `\n\nLEGAL REFERENCE DATA (use these exact article numbers and penalties in your answer):\n${contextParts.join("\n\n---\n\n")}`
@@ -1015,7 +1060,7 @@ app.post("/api/check-cached-answer", (req, res) => {
   }
 });
 
-app.post("/api/moroccan-law-qa", async (req, res) => {
+app.post("/api/moroccan-law-qa", apiLimiter, async (req, res) => {
   try {
     const inputMessages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     if (inputMessages.length === 0) {
@@ -1023,8 +1068,10 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
     }
 
     const lang = req.body?.language || "ar";
+    const documentText = typeof req.body?.documentText === "string" ? req.body.documentText : null;
     const lastUserMessage = [...inputMessages].reverse().find((m) => m?.role === "user")?.content || "";
-    console.log(`[QA] lang=${lang} | q=${lastUserMessage.slice(0, 200)}`);
+    const reqStartTime = Date.now();
+    console.log(`[QA] lang=${lang} | docMode=${!!documentText} | q=${lastUserMessage.slice(0, 200)}`);
 
     // ── GREETING AUTO-REPLY (ZERO API CALLS) ────────────────────────────────
     if (isGreeting(lastUserMessage, lang)) {
@@ -1068,7 +1115,7 @@ app.post("/api/moroccan-law-qa", async (req, res) => {
       : lastUserMessage;
     // Accept client-detected Darija intent for intent-specific prompt injection
     const darijaIntent = (lang === "dar" && req.body?.darijaIntent) ? String(req.body.darijaIntent).slice(0, 50) : null;
-    const systemPrompt = buildSystemPrompt(lang, domain, textForRAG, darijaIntent);
+    const systemPrompt = buildSystemPrompt(lang, domain, textForRAG, darijaIntent, documentText);
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -1342,10 +1389,12 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
 
       if (content) {
         const suggestions = await suggestionsPromise;
+        logAnalytics({ question: lastUserMessage.slice(0, 300), language: lang, domain, provider: step.provider, responseLength: content.length, responseTimeMs: Date.now() - reqStartTime, success: true, documentMode: !!documentText });
         return res.json({ content, suggestions });
       }
     }
 
+    logAnalytics({ question: lastUserMessage.slice(0, 300), language: lang, domain, provider: "none", success: false, error: "all_providers_exhausted", documentMode: !!documentText });
     return res.status(200).json({
       content: buildQaDegradedReply(lang),
       suggestions: [],
@@ -1363,6 +1412,45 @@ Return ONLY a JSON array of 3 strings, no explanation, no markdown, no numbering
       error: "Internal server error",
       details: error instanceof Error ? error.message : String(error),
     });
+  }
+});
+
+/* ─── Rating / Feedback ─── */
+app.post("/api/rate", async (req, res) => {
+  try {
+    const { rating, comment, language, question, answerId } = req.body;
+    if (!["up", "down"].includes(rating)) return res.status(400).json({ error: "rating must be 'up' or 'down'" });
+    const entry = {
+      timestamp: new Date().toISOString(),
+      rating,
+      comment: (comment || "").slice(0, 300),
+      language: language || "ar",
+      question: (question || "").slice(0, 200),
+      answerId: answerId || "",
+      ipHash: hashIp(req.ip),
+    };
+    fs.appendFileSync(path.join(LOGS_DIR, "ratings.jsonl"), JSON.stringify(entry) + "\n");
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: "Rating error", details: error.message });
+  }
+});
+
+/* ─── Analytics summary ─── */
+app.get("/api/analytics", async (req, res) => {
+  try {
+    const filePath = path.join(LOGS_DIR, "analytics.jsonl");
+    if (!fs.existsSync(filePath)) return res.json({ total: 0, byLanguage: {}, byDomain: {} });
+    const lines = fs.readFileSync(filePath, "utf8").split("\n").filter(Boolean);
+    const entries = lines.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    const byLanguage = {}; const byDomain = {};
+    entries.forEach(e => {
+      if (e.language) byLanguage[e.language] = (byLanguage[e.language] || 0) + 1;
+      if (e.domain)   byDomain[e.domain]     = (byDomain[e.domain]     || 0) + 1;
+    });
+    return res.json({ total: entries.length, byLanguage, byDomain });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 });
 

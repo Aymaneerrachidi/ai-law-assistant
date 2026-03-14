@@ -507,21 +507,34 @@ const GREETINGS = {
   function isGreeting(text, language) {
     const textLower = text.toLowerCase().trim();
 
-    const checkLang = (langData) => {
+    // Find the first greeting pattern that matches and return it
+    const findMatch = (langData) => {
       for (const category of Object.values(langData)) {
         for (const pattern of (category.patterns || [])) {
-          if (matchesPattern(textLower, pattern.toLowerCase())) return true;
+          const pLower = pattern.toLowerCase();
+          if (matchesPattern(textLower, pLower)) return pLower;
         }
       }
-      return false;
+      return null;
     };
 
-    if (checkLang(GREETINGS[language] || {})) return true;
+    // Check if a matched greeting is the whole (or near-whole) message
+    const isPureGreeting = (matchedPattern) => {
+      if (!matchedPattern) return false;
+      // Remove the greeting phrase from text and check what's left
+      const remainder = textLower.replace(matchedPattern, '').replace(/[،,،.؟?!،\s]/g, '').trim();
+      // If more than 12 chars remain, this is a question with a greeting prefix — not a pure greeting
+      return remainder.length <= 12;
+    };
+
+    let matched = findMatch(GREETINGS[language] || {});
+    if (matched) return isPureGreeting(matched);
 
     // Cross-language fallback — catches e.g. "bonjour" when lang is set to "ar"
     for (const lang of Object.keys(GREETINGS)) {
       if (lang === language) continue;
-      if (checkLang(GREETINGS[lang])) return true;
+      matched = findMatch(GREETINGS[lang]);
+      if (matched) return isPureGreeting(matched);
     }
 
     return false;
