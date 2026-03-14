@@ -53,6 +53,7 @@ function hashIp(ip) {
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1); // Trust first proxy (Vercel/Lambda) so rate-limit reads X-Forwarded-For correctly
 const port = process.env.PORT || 8787;
 
 // ── Language-aware routing models ───────────────────────────────────────────
