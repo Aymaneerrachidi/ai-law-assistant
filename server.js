@@ -11,8 +11,11 @@ import { isGreeting, getGreetingResponse, getSuggestedQuestion, getAllSuggestedQ
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const LOGS_DIR = path.join(__dirname, "logs");
-if (!fs.existsSync(LOGS_DIR)) fs.mkdirSync(LOGS_DIR, { recursive: true });
+// Use /tmp on read-only serverless environments (Vercel/Lambda), fall back to local logs/
+const LOGS_DIR = fs.existsSync("/tmp") && !fs.existsSync(path.join(__dirname, "logs"))
+  ? "/tmp"
+  : path.join(__dirname, "logs");
+try { if (LOGS_DIR !== "/tmp") fs.mkdirSync(LOGS_DIR, { recursive: true }); } catch {}
 
 // ── Rate Limiting ────────────────────────────────────────────────────────────
 const apiLimiter = rateLimit({
