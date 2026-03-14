@@ -469,6 +469,72 @@ const OFF_TOPIC_RESPONSES = {
   dar: "سؤالك ماشيش متعلق بالقانون المغربي. أنا مساعد قانوني متخصص فقط في القانون المغربي، وما كنقدرش نجاوب على أسئلة خارج هاد النطاق. إذا عندك سؤال قانوني على القانون المغربي، يسرني نعاونك.",
 };
 
+// ── Prompt Injection Detection ───────────────────────────────────────────────
+const INJECTION_PATTERNS = [
+  // Instruction override attempts
+  /ignore\s+(all\s+)?(previous|prior|your|above|earlier|initial|system)\s+(instructions?|rules?|prompt|guidelines?|directives?|constraints?)/i,
+  /disregard\s+(all\s+)?(previous|prior|your|above|earlier|system)\s+(instructions?|rules?|prompt|guidelines?)/i,
+  /forget\s+(all\s+)?(previous|prior|your|above|earlier|everything|all)\s*(instructions?|rules?|told|said|prompt)?/i,
+  /override\s+(your\s+)?(instructions?|rules?|system|prompt|programming|constraints?)/i,
+  /bypass\s+(your\s+)?(filter|restriction|rule|instruction|system|safety|guard|limit)/i,
+  /new\s+instructions?[\s:]/i,
+  /from\s+now\s+on[,\s]/i,
+  /act\s+as\s+(if\s+you\s+are|a\s+|an\s+)?(different|new|unrestricted|free|developer|admin|root|DAN)/i,
+
+  // Identity / mode hijacking
+  /you\s+are\s+now\s+(in\s+)?(developer|debug|admin|god|unrestricted|jailbreak|DAN|free|test)\s*(mode)?/i,
+  /developer\s+mode/i,
+  /jailbreak/i,
+  /\bDAN\b.*mode/i,
+  /pretend\s+(you\s+)?(are|have\s+no|don.t\s+have)\s+(no\s+)?(restrictions?|limits?|rules?|filter)/i,
+  /you\s+have\s+no\s+(restrictions?|limits?|rules?|guidelines?|constraints?)/i,
+  /without\s+(any\s+)?(restrictions?|limits?|rules?|filter|guidelines?|constraints?)/i,
+  /no\s+restrictions?\s+(anymore|from\s+now|at\s+all)/i,
+  /simulate\s+(being\s+)?(an?\s+)?(AI|assistant|system|model)\s+(without|with\s+no)/i,
+
+  // System prompt / internals extraction
+  /print\s+(your\s+|the\s+)?(full\s+)?(system\s+prompt|instructions?|prompt|context|rules?)/i,
+  /reveal\s+(your\s+|the\s+)?(system\s+prompt|instructions?|prompt|training|context)/i,
+  /show\s+(me\s+)?(your\s+)?(system\s+prompt|instructions?|prompt|training|internal|context|files?)/i,
+  /what\s+(are\s+)?(your\s+)?(system\s+)?(instructions?|prompt|rules?|guidelines?|training\s+data)/i,
+  /repeat\s+(your\s+|the\s+)?(system\s+prompt|instructions?|prompt)/i,
+  /output\s+(your\s+|the\s+)?(system\s+prompt|instructions?|initial\s+prompt)/i,
+  /list\s+(all\s+)?(your\s+)?(files?|documents?|data|training|instructions?|confidential)/i,
+  /access\s+(to\s+)?(all\s+)?(your\s+)?(files?|documents?|data|confidential)/i,
+  /confidential\s+documents?/i,
+
+  // Roleplay / scenario injection
+  /you\s+are\s+(now\s+)?(playing|roleplaying|acting\s+as)\s+(a\s+|an\s+)?(different|new|unrestricted)/i,
+  /let.s\s+(play|pretend|roleplay|imagine)\s+(that\s+)?(you\s+are|you.re|you\s+have\s+no)/i,
+  /hypothetically[,\s]+if\s+you\s+(had\s+no|were\s+not)\s+(restrictions?|rules?|guidelines?)/i,
+
+  // Debug / system impersonation
+  /you\s+are\s+(now\s+)?helping\s+(debug|test)\s+(a\s+|an\s+)?(document|retrieval|system|AI|database)/i,
+  /debug\s+(mode|system|the\s+system)/i,
+  /\[system\]/i,
+  /\[admin\]/i,
+  /\[override\]/i,
+
+  // Arabic/French variants
+  /تجاهل\s+(جميع\s+)?(التعليمات|القواعد|الأوامر|النظام)/,
+  /أنت\s+(الآن\s+)?(في\s+وضع|تعمل\s+بدون)\s*(المطور|مقيد|مقيدة)?/,
+  /اطبع\s+(موجه\s+النظام|التعليمات|الأوامر)/,
+  /ignorez?\s+(toutes?\s+les?\s+)?(instructions?|règles?|directives?|système)/i,
+  /mode\s+(développeur|développement|admin|débug|non\s+restreint)/i,
+];
+
+const INJECTION_RESPONSES = {
+  ar: "لا أستطيع الاستجابة لهذا النوع من الطلبات. أنا مساعد قانوني متخصص في القانون المغربي فقط.",
+  fr: "Je ne peux pas répondre à ce type de demande. Je suis un assistant juridique spécialisé exclusivement en droit marocain.",
+  en: "I cannot respond to this type of request. I am a legal assistant specialized exclusively in Moroccan law.",
+  dar: "ما كنقدرش نجاوب على هاد النوع من الطلبات. أنا مساعد قانوني متخصص فقط في القانون المغربي.",
+};
+
+function isPromptInjection(text) {
+  if (!text) return false;
+  return INJECTION_PATTERNS.some((pattern) => pattern.test(text));
+}
+
 function normalizeArabic(text) {
   return (text || "")
     // Strip Latin accent marks (NFD decomposition) so hériter = heriter, etc.
@@ -1077,6 +1143,15 @@ app.post("/api/moroccan-law-qa", apiLimiter, async (req, res) => {
     const reqStartTime = Date.now();
     console.log(`[QA] lang=${lang} | docMode=${!!documentText} | q=${lastUserMessage.slice(0, 200)}`);
 
+    // ── PROMPT INJECTION GUARD (runs before everything else) ─────────────────
+    // Check every user message in the thread, not just the last one
+    const allUserText = inputMessages.filter(m => m?.role === "user").map(m => m?.content || "").join(" ");
+    if (isPromptInjection(lastUserMessage) || isPromptInjection(allUserText)) {
+      console.warn(`[QA] PROMPT INJECTION BLOCKED | lang=${lang} | q=${lastUserMessage.slice(0, 120)}`);
+      logAnalytics({ question: lastUserMessage.slice(0, 300), language: lang, provider: "injection_blocked", success: false, error: "prompt_injection" });
+      return res.json({ content: INJECTION_RESPONSES[lang] || INJECTION_RESPONSES.ar, injectionBlocked: true });
+    }
+
     // ── GREETING AUTO-REPLY (ZERO API CALLS) ────────────────────────────────
     if (isGreeting(lastUserMessage, lang)) {
       const greetingReply = getGreetingResponse(lang, lastUserMessage);
@@ -1499,6 +1574,11 @@ app.post("/api/analyze-document", async (req, res) => {
   try {
     const { text, language, docType } = req.body;
     if (!text) return res.status(400).json({ error: "text is required" });
+    // Guard against injected instructions embedded in uploaded document text
+    if (isPromptInjection(text.slice(0, 2000))) {
+      console.warn(`[ANALYZE] PROMPT INJECTION IN DOCUMENT | lang=${language}`);
+      return res.json({ analysis: INJECTION_RESPONSES[language] || INJECTION_RESPONSES.ar, injectionBlocked: true });
+    }
 
     // Build type-specific instructions 
     const typeInstructions = {
@@ -1672,6 +1752,10 @@ app.post("/api/explain-concept", async (req, res) => {
     const { concept, language, level, style, background } = req.body;
     if (!concept || typeof concept !== "string" || concept.trim().length === 0)
       return res.status(400).json({ error: "concept is required" });
+    if (isPromptInjection(concept)) {
+      console.warn(`[EXPLAIN] PROMPT INJECTION BLOCKED | concept=${concept.slice(0, 80)}`);
+      return res.json({ explanation: INJECTION_RESPONSES[language] || INJECTION_RESPONSES.ar, injectionBlocked: true });
+    }
 
     const lang = ["ar", "fr", "en"].includes(language) ? language : "ar";
 
