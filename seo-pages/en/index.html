@@ -1,33 +1,208 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Adala | Moroccan Law Guides (Family, Labor, Criminal, Commercial, Real Estate)</title>
-  <meta name="description" content="Adala provides practical Moroccan law guides in Arabic, French, Darija, and English. Start with family law and labor law pillar pages." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Moroccan Law in English — Legal Guide for Morocco | AdalaApp</title>
+  <meta name="description" content="Your complete guide to Moroccan law in English: labor law, family law (Moudawana), criminal law, commercial law and real estate law. Understand your rights in Morocco." />
   <link rel="canonical" href="https://adalaapp.com/en/" />
   <link rel="alternate" hreflang="ar-MA" href="https://adalaapp.com/ar/" />
   <link rel="alternate" hreflang="fr-MA" href="https://adalaapp.com/fr/" />
   <link rel="alternate" hreflang="en" href="https://adalaapp.com/en/" />
-  <style>body{font-family:Arial,sans-serif;line-height:1.75;margin:0}main{max-width:960px;margin:auto;padding:24px}a{color:#7a5a14}</style>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.8; margin: 0; color: #1a1a1a; background: #fff; }
+    header { background: #1a1000; color: #fff; padding: 12px 24px; display: flex; align-items: center; gap: 12px; }
+    header a.brand { color: #e8c97a; text-decoration: none; font-size: 1.15rem; font-weight: 700; letter-spacing: .3px; }
+    header span { color: #aaa; font-size: 0.9rem; }
+    nav.breadcrumb { background: #f9f6f0; border-bottom: 1px solid #e8d9b0; padding: 8px 24px; font-size: 0.85rem; color: #888; }
+    nav.breadcrumb a { color: #7a5a14; text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+    main { max-width: 860px; margin: 0 auto; padding: 36px 24px 48px; }
+    h1 { font-size: 1.95rem; color: #1a1000; margin-top: 0; margin-bottom: 8px; line-height: 1.3; }
+    .subtitle { color: #666; font-size: 1.05rem; margin-top: 0; margin-bottom: 28px; }
+    h2 { font-size: 1.25rem; color: #3d2b00; margin-top: 2.2rem; border-bottom: 2px solid #e8c97a; padding-bottom: 6px; }
+    h3 { color: #5a4010; font-size: 1.05rem; margin-top: 1.5rem; }
+    p { margin-bottom: 1rem; }
+    ul { padding-left: 1.4rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.4rem; }
+    .pillar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin: 28px 0; }
+    .pillar-card { background: #f9f6f0; border: 1px solid #e8d9b0; border-radius: 10px; padding: 20px 22px; }
+    .pillar-card h3 { margin-top: 0; color: #3d2b00; font-size: 1.05rem; }
+    .pillar-card p { font-size: 0.92rem; color: #555; margin-bottom: 12px; }
+    .pillar-card a { color: #7a5a14; font-weight: 600; text-decoration: none; font-size: 0.92rem; }
+    .pillar-card a:hover { text-decoration: underline; }
+    .cta-box { background: linear-gradient(135deg, #1a1000 0%, #3d2b00 100%); color: #fff; border-radius: 12px; padding: 28px 32px; margin: 36px 0; text-align: center; }
+    .cta-box p { margin: 0 0 16px; font-size: 1.05rem; opacity: 0.9; }
+    .cta-btn { display: inline-block; background: #e8c97a; color: #1a1000; padding: 13px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 1rem; }
+    .cta-btn:hover { background: #f0d88a; }
+    .faq { border-top: 1px solid #e8d9b0; margin-top: 36px; }
+    .faq-item { border-bottom: 1px solid #e8d9b0; padding: 18px 0; }
+    .faq-q { font-weight: 700; color: #3d2b00; font-size: 1.02rem; margin-bottom: 8px; }
+    .faq-a { color: #444; }
+    .related { background: #f9f6f0; border-radius: 10px; padding: 24px; margin-top: 36px; }
+    .related h3 { margin-top: 0; color: #3d2b00; }
+    .related ul { margin: 0; }
+    .related a { color: #7a5a14; text-decoration: none; font-weight: 500; }
+    .related a:hover { text-decoration: underline; }
+    footer { background: #111; color: #777; text-align: center; padding: 20px; font-size: 0.82rem; margin-top: 0; }
+    footer a { color: #e8c97a; text-decoration: none; margin: 0 8px; }
+    .disclaimer { font-size: 0.8rem; color: #999; font-style: italic; margin-top: 28px; padding-top: 16px; border-top: 1px solid #eee; }
+    @media (max-width: 640px) { h1 { font-size: 1.55rem; } main { padding: 24px 16px; } .cta-box { padding: 20px; } }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "name": "AdalaApp",
+        "url": "https://adalaapp.com",
+        "description": "AI Legal Assistant for Moroccan Law",
+        "inLanguage": "en"
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Moroccan Law in English",
+            "item": "https://adalaapp.com/en/"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is Moroccan law available in English?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Official Moroccan legislation is published in Arabic in the Bulletin Officiel. Many important laws are also available in French, which is widely used by legal practitioners and commercial courts. English translations are not officially published, but AdalaApp provides clear, accurate explanations of Moroccan law in English, French, and Darija to make the law accessible to all."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Moroccan law apply to foreign nationals living or working in Morocco?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Moroccan law applies to all individuals on Moroccan territory, including foreign nationals. This covers areas such as labor law (employment contracts, minimum wage, dismissal), criminal law, real estate law, and commercial law. Family law matters may involve both Moroccan law and the law of the individual's country of origin depending on nationality and the type of issue."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is AdalaApp and how can it help me understand Moroccan law?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "AdalaApp is an AI-powered legal assistant specifically trained on Moroccan law. It answers questions in English, French, Arabic, and Darija on topics including labor law, family law (Moudawana), criminal law, commercial law and real estate law. It explains your rights, the applicable procedures, and the steps you can take — without replacing the advice of a qualified Moroccan lawyer for complex situations."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
-<main>
-  <h1>Adala: Moroccan Law, explained clearly</h1>
-  <p>Adala is a legal information platform focused on Moroccan law. We publish practical, readable pages to help users understand legal rights, common procedures, and risk points before taking action.</p>
-  <p><a href="/ar/">Arabic</a> · <a href="/fr/">French</a> · <a href="/darija/">Darija</a> · <a href="/">Open app</a></p>
+  <header>
+    <a class="brand" href="https://adalaapp.com">AdalaApp</a>
+    <span>/ Moroccan Law in English</span>
+  </header>
 
-  <h2>Pillar pages</h2>
-  <ul>
-    <li><a href="/en/labor-law/">Moroccan Labor Law Guide</a></li>
-    <li><a href="/en/family-law/">Moroccan Family Law Guide</a></li>
-    <li><a href="/en/criminal-law/">Moroccan Criminal Law Guide</a></li>
-    <li><a href="/en/commercial-law/">Moroccan Commercial Law Guide</a></li>
-    <li><a href="/en/real-estate-law/">Moroccan Real Estate Law Guide</a></li>
-  </ul>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <span>Home — Moroccan Law Explained in English</span>
+  </nav>
 
-  <h2>Important note</h2>
-  <p>This site provides legal information for education. It is not a substitute for case-specific legal advice from a licensed lawyer in Morocco.</p>
-</main>
+  <main>
+    <h1>Moroccan Law Explained in English</h1>
+    <p class="subtitle">Practical, accurate guides to the Moroccan legal system — covering labor, family, criminal, commercial and real estate law — written for English speakers.</p>
+
+    <h2>Understanding the Moroccan Legal System</h2>
+    <p>Morocco has one of the most developed and codified legal systems in the Arab world and Africa. Its legal tradition blends three major influences: <strong>French civil law</strong> (inherited from the Protectorate era and still evident in the structure of the courts, contracts and commercial law), <strong>Islamic jurisprudence</strong> (the Maliki school, which underpins family law, inheritance and personal status), and an increasingly dynamic body of <strong>modern Moroccan legislation</strong> passed since independence in 1956.</p>
+    <p>Morocco's legal system has undergone significant modernization in recent decades. The 2004 Moudawana (Family Code) reformed personal status law. The 2011 Constitution strengthened judicial independence and fundamental rights. Ongoing economic reforms have simplified business creation and commercial dispute resolution. This makes Morocco an increasingly attractive destination for foreign investment, while also improving access to justice for citizens and residents.</p>
+    <p>For English speakers — whether expats living in Morocco, investors, tourists facing legal issues, or members of the Moroccan diaspora — understanding this legal framework is essential. AdalaApp exists to bridge that information gap.</p>
+
+    <h2>Main Areas of Moroccan Law</h2>
+    <div class="pillar-grid">
+      <div class="pillar-card">
+        <h3>Labor Law</h3>
+        <p>Law 65-99: employment contracts, minimum wage (SMIG 3,111 DH/month), working hours, paid leave, dismissal and severance.</p>
+        <a href="https://adalaapp.com/en/labor-law/">Read the full guide &rarr;</a>
+      </div>
+      <div class="pillar-card">
+        <h3>Family Law</h3>
+        <p>Moudawana 2004: marriage (age 18), divorce types (talaq, khul3, chiqaq), child custody, maintenance (nafaqa) and inheritance.</p>
+        <a href="https://adalaapp.com/en/family-law/">Read the full guide &rarr;</a>
+      </div>
+      <div class="pillar-card">
+        <h3>Criminal Law</h3>
+        <p>Penal Code offenses, custody rights (max 48h), presumption of innocence, criminal procedure and appeals.</p>
+        <a href="https://adalaapp.com/fr/droit-penal/">Guide disponible en français &rarr;</a>
+      </div>
+      <div class="pillar-card">
+        <h3>Commercial Law</h3>
+        <p>Law 15-95: company formation (SARL min. 10,000 MAD), trade register, commercial contracts and insolvency.</p>
+        <a href="https://adalaapp.com/fr/droit-commercial/">Guide disponible en français &rarr;</a>
+      </div>
+      <div class="pillar-card">
+        <h3>Real Estate Law</h3>
+        <p>Land title (titre foncier), property purchase, residential tenancy (Law 67-12), co-ownership and expropriation.</p>
+        <a href="https://adalaapp.com/fr/droit-immobilier/">Guide disponible en français &rarr;</a>
+      </div>
+    </div>
+
+    <h2>The Moroccan Court System</h2>
+    <p>Morocco's judiciary is organized on three levels. <strong>First-instance courts</strong> (tribunaux de première instance) handle the vast majority of civil, criminal, and personal status matters. <strong>Courts of Appeal</strong> review contested judgments from lower courts. At the apex sits the <strong>Court of Cassation</strong> (formerly the Supreme Court), which ensures uniform application of the law across the country without re-examining the facts.</p>
+    <p>Specialized courts include: <strong>commercial courts</strong> for business disputes, <strong>administrative courts</strong> for disputes with public authorities, and <strong>labor tribunals</strong> for employment matters. The <strong>Constitutional Court</strong> rules on the constitutionality of legislation and electoral disputes.</p>
+    <p>Legal proceedings are conducted in <strong>Arabic</strong>, the sole official language of the judiciary. Litigants who do not speak Arabic have the right to an interpreter. Many commercial courts also use French in practice.</p>
+
+    <h2>Why AdalaApp?</h2>
+    <p>Most legal information about Morocco is published in Arabic or French, leaving English speakers at a significant disadvantage. AdalaApp's AI legal assistant has been specifically trained on Moroccan law and answers questions in English, French, Arabic and Darija. Whether you are an expat employee, an investor forming a company, a foreign spouse navigating the Moudawana, or simply a curious citizen, AdalaApp gives you instant, accurate, and accessible legal guidance.</p>
+
+    <div class="cta-box">
+      <p>Have a question about Moroccan law? Ask Adala — our AI legal assistant answers in English, French, Arabic and Darija, available 24/7.</p>
+      <a class="cta-btn" href="/en/">Ask my legal question</a>
+    </div>
+
+    <section class="faq" aria-label="Frequently Asked Questions">
+      <h2>Frequently Asked Questions</h2>
+
+      <div class="faq-item">
+        <div class="faq-q">Is Moroccan law available in English?</div>
+        <div class="faq-a">Official Moroccan laws are published in Arabic in the Bulletin Officiel. French translations are widely used by practitioners. There are no official English versions, but AdalaApp provides clear explanations in English of all major areas of Moroccan law so that English speakers can understand their rights and obligations.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Does Moroccan law apply to foreign nationals?</div>
+        <div class="faq-a">Yes. Moroccan law applies to everyone on Moroccan territory, including foreign nationals. Employment contracts, criminal liability, real estate transactions and commercial activities are all governed by Moroccan law. For family law matters, the applicable law may depend on nationality and domicile — particularly for mixed-nationality couples.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">What is AdalaApp and how can it help me?</div>
+        <div class="faq-a">AdalaApp is an AI legal assistant trained on Moroccan law. It answers questions in English, French, Arabic and Darija on labor law, family law, criminal law, commercial law and real estate law. It explains your rights and the applicable procedures clearly and immediately — without replacing the personalized advice of a qualified Moroccan lawyer for complex situations.</div>
+      </div>
+    </section>
+
+    <div class="related">
+      <h3>Available in Other Languages</h3>
+      <ul>
+        <li><a href="https://adalaapp.com/fr/">Droit marocain en français — Guide juridique complet</a></li>
+        <li><a href="https://adalaapp.com/ar/">القانون المغربي — الدليل القانوني بالعربية</a></li>
+      </ul>
+    </div>
+
+    <p class="disclaimer">The information on this website is provided for general informational purposes only and does not constitute legal advice. For specific situations, consult a lawyer registered with a Moroccan Bar Association.</p>
+  </main>
+
+  <footer>
+    <span>&copy; 2024 AdalaApp &mdash; AI Legal Assistant for Moroccan Law</span><br />
+    <a href="https://adalaapp.com/en/">Home</a>
+    <a href="https://adalaapp.com/en/labor-law/">Labor Law</a>
+    <a href="https://adalaapp.com/en/family-law/">Family Law</a>
+    <a href="https://adalaapp.com/fr/">French Guide</a>
+    <a href="https://adalaapp.com/ar/">Arabic Guide</a>
+  </footer>
 </body>
 </html>

@@ -867,6 +867,27 @@ export default function MoroccanLawQA() {
   function toggleTheme() { setTheme(t => t === "dark" ? "light" : "dark"); }
   const P = theme === "dark" ? DARK_P : LIGHT_P;
 
+  // ── Dynamic SEO meta per language ──
+  useEffect(() => {
+    const SEO = {
+      ar:  { title: "عدالة | مساعد قانوني ذكي للقانون المغربي — AdalaApp", desc: "اطرح سؤالك القانوني واحصل على إجابة دقيقة مستندة إلى التشريع المغربي. يغطي مدونة الأسرة، القانون الجنائي، قانون الشغل، العقود وأكثر من 65 قانوناً.", lang: "ar", dir: "rtl" },
+      dar: { title: "عدالة | مساعد قانوني بالدارجة — AdalaApp", desc: "سقسي سؤالك القانوني وتجيب جواب واضح من القانون المغربي بالدارجة. كنغطيو مدونة الأسرة، القانون الجنائي، قانون الشغل والعقود.", lang: "ar", dir: "rtl" },
+      fr:  { title: "AdalaApp | Assistant Juridique IA — Droit Marocain عدالة", desc: "Posez votre question juridique et obtenez une réponse précise sur la loi marocaine. Couvre la Moudawana, le Code Pénal, le Code du Travail, les contrats et 65+ lois.", lang: "fr", dir: "ltr" },
+      en:  { title: "AdalaApp | AI Legal Assistant — Moroccan Law عدالة", desc: "Ask any question about Moroccan law and get a precise, AI-powered answer. Covers Family Code (Moudawana), Criminal Law, Labor Law, Contracts and 65+ laws in English.", lang: "en", dir: "ltr" },
+    };
+    const s = SEO[language] || SEO.ar;
+    document.title = s.title;
+    document.documentElement.lang = s.lang;
+    document.documentElement.dir  = s.dir;
+    const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute("content", val); };
+    setMeta('meta[name="description"]',         s.desc);
+    setMeta('meta[property="og:title"]',        s.title);
+    setMeta('meta[property="og:description"]',  s.desc);
+    setMeta('meta[property="og:locale"]',       language === "fr" ? "fr_MA" : language === "en" ? "en_US" : "ar_MA");
+    setMeta('meta[name="twitter:title"]',       s.title);
+    setMeta('meta[name="twitter:description"]', s.desc);
+  }, [language]);
+
   // ── Bookmarks ──
   function saveBookmark(msgIdx) {
     const answer = messages[msgIdx];
