@@ -4,6 +4,8 @@
 > Application web IA multilingue dédiée au droit marocain  
 > Multilingual AI web app dedicated to Moroccan law
 
+> Repo note: this workspace also includes an Expo mobile app in `AdalaApp/`.
+
 ---
 
 ## 🇲🇦 العربية
