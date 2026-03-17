@@ -724,6 +724,22 @@ if (typeof document !== "undefined" && !document.getElementById(styleId)) {
     .bm-overlay{position:fixed;inset:0;z-index:1199;background:#0007;
       opacity:0;pointer-events:none;transition:opacity 280ms;}
     .bm-overlay.open{opacity:1;pointer-events:all;}
+    /* ── Hide white SEO tabs/sections and footers ── */
+    [class*="seo"], [id*="seo"],
+    [class*="footer"], [id*="footer"],
+    footer, [role="contentinfo"] {
+      display: none !important;
+    }
+    /* Hide any white backgrounds on mobile */
+    @media(max-width:768px){
+      [style*="background: white"],
+      [style*="background: #fff"],
+      [style*="background: #ffffff"],
+      div[style*="background-color: white"],
+      section[style*="background-color: white"] {
+        display: none !important;
+      }
+    }
   `;
   document.head.appendChild(s);
 }

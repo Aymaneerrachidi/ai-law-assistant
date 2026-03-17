@@ -1,0 +1,3 @@
+{"question":"ما دا يتطلب التسجيل في منازعات الشغل","language":"ar","domain":"labor","provider":"gemini","responseLength":1855,"responseTimeMs":12059,"success":true,"documentMode":false,"timestamp":"2026-03-14T22:21:59.128Z"}
+{"question":"إدانة بعض المتهمين بتهمة إدخال واستعمال مواد نارية داخل ملعب","language":"ar","domain":"general","provider":"openai","responseLength":1257,"responseTimeMs":4254,"success":true,"documentMode":true,"timestamp":"2026-03-14T22:22:46.300Z"}
+{"question":"Comment se fait le partage de l'héritage ?","language":"fr","domain":"family","provider":"gemini","responseLength":1616,"responseTimeMs":2759,"success":true,"documentMode":false,"timestamp":"2026-03-14T22:30:19.017Z"}
